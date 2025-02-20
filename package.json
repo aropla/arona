@@ -1,0 +1,11 @@
+{
+  "name": "aropla",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "arona": "pnpm -F \"arona\"",
+    "seele": "pnpm -F \"seele\""
+  },
+  "author": "",
+  "license": "ISC"
+}
