@@ -54,6 +54,94 @@ function tryGetMiracleNode(position, halfWidth, halfHeight, nodes) {
   return miracle
 }
 
+function useKeyboardEvents() {
+
+}
+
+function useRuler() {
+  const startPosition = useRef({
+    x: 0,
+    y: 0,
+  })
+  const curPosition = useRef({
+    x: 0,
+    y: 0,
+  })
+
+  return {
+    startPosition: startPosition.current,
+    curPosition: curPosition.current,
+    startAt(position) {
+      startPosition.current.x = position.x
+      startPosition.current.y = position.y
+    },
+    moveTo(position) {
+      curPosition.current.x = position.x
+      curPosition.current.y = position.y
+    },
+    reset() {
+      startPosition.current.x = 0
+      startPosition.current.y = 0
+
+      curPosition.current.x = 0
+      curPosition.current.y = 0
+    },
+  }
+}
+
+function useDragHelper({
+  onDragStart,
+  onDragging,
+  onDragStop,
+}) {
+  const ruler = useRuler()
+  const isEnabled = useRef(false)
+  const context = useRef({})
+
+  return {
+    context,
+    startPosition: ruler.startPosition,
+    curPosition: ruler.curPosition,
+    setPosition(position) {
+      const currentPosition = dragger.current.currentPosition
+
+      currentPosition.x = position.x
+      currentPosition.y = position.y
+    },
+    start(position) {
+      isEnabled.current = true
+      ruler.startAt(position)
+      cb(ruler.curPosition, ruler.startPosition, context.current)
+
+      onDragStart(ruler.curPosition, ruler.startPosition, context.current)
+    },
+    dragTo(position) {
+      ruler.moveTo(position)
+
+      onDragging(ruler.curPosition, ruler.startPosition, context.current)
+    },
+    stop(cb) {
+      isEnabled.current = false
+      cb(ruler.curPosition, ruler.startPosition, context.current)
+
+      onDragStop(state.current, initialState.current, context.current)
+    },
+    reset() {
+      isEnabled.current = false
+      ruler.reset()
+    },
+  }
+}
+
+function useMiracleNodeDragger() {
+  const mouseDragger = useDragHelper()
+  const keyboardDragger = useDragHelper()
+
+  return {
+
+  }
+}
+
 export default function MiracleEditor({ miracle, editor = MiracleEditorOptions }) {
   const miracleNodes = useSeeleQuery(MiraclesQuery)
   const nodes = miracleNodes.array().filter(entity => entity[MiracleRef] === miracle[ID])
@@ -385,18 +473,41 @@ export default function MiracleEditor({ miracle, editor = MiracleEditorOptions }
     mapView.zoom(1)
   }, [])
 
-  const handleMiracleNodeCreate = useCallback(miracleNode => {
-    setSelectedMiracleNode({ value: miracleNode })
+  const handleMiracleNodeCreate = useCallback(() => {
+    const entity = arona.createEntity(Miracle)
+
+    arona.addComponent(entity, Temp)
+    entity[ID] = String(Date.now())
+    entity[Position] = {
+      x: parseInt(mapView.camera[Position].x),
+      y: parseInt(mapView.camera[Position].y),
+    }
+    entity[MiracleRef] = miracle[ID]
+
+    setSelectedMiracleNode({ value: entity })
     setSidePanelShow(true)
     mapView.zoom(1.3)
 
-    mapView.pan(miracleNode[Position])
-  }, [])
+    mapView.pan(entity[Position])
+  }, [miracle])
+
+  useKey(
+    (event => event.shiftKey && (event.key === 'a' || event.key === 'A')),
+    handleMiracleNodeCreate,
+    { event: 'keyup' }
+  )
+
+  useKey(
+    'x',
+    () => handleMiracleNodeRemove(selectedMiracleNode.value),
+    { event: 'keyup' },
+    [selectedMiracleNode]
+  )
 
   return (
     <div className="miracle-editor flex-1 flex relative overflow-hidden select-none" onMouseUp={handleMiracleNodeUnselect}>
-      <div className="center-point flex absolute inset-0 items-center justify-center z-1">
-        <div className="point rounded-full bg-red-300 w-2 h-2"></div>
+      <div className="center-point flex absolute inset-0 items-center justify-center">
+        <div className="point rounded-full bg-red-300 w-2 h-2 z-1"></div>
       </div>
 
       <MiracleEditorBackground
@@ -405,7 +516,6 @@ export default function MiracleEditor({ miracle, editor = MiracleEditorOptions }
         mapView={mapView}
         editor={editor}
       />
-      {/* <MiracleEditorCanvas root={miracle} editor={editor} /> */}
       <AronaMapView controller={mapView}>
         {
           nodes.map(node => (
@@ -454,18 +564,8 @@ function MiracleEditorBottomBar({ miracle, miracleNode, mapView, onCreate, onRem
   }, [debug])
 
   const handleMiracleNodeCreate = useCallback(() => {
-    const entity = arona.createEntity(Miracle)
-
-    arona.addComponent(entity, Temp)
-    entity[ID] = String(Date.now())
-    entity[Position] = {
-      x: parseInt(camera[Position].x),
-      y: parseInt(camera[Position].y),
-    }
-    entity[MiracleRef] = miracle[ID]
-
     onCreate(entity)
-  }, [miracle])
+  }, [onCreate])
 
   const handleStopPropagation = useCallback(event => {
     event.stopPropagation()
@@ -492,7 +592,7 @@ function MiracleEditorBottomBar({ miracle, miracleNode, mapView, onCreate, onRem
         <div className="item w-10 h-10 rounded bg-white/20 flex items-center justify-center" onClick={handleMiracleNodeCreate}>+</div>
         <div
           className={classNames(
-            "action-item w-10 h-10 rounded bg-white/20 flex items-center justify-center transition ease-in-out duration-350 border-1 border-solid border-transparent",
+            "action-item w-10 h-10 rounded bg-white/20 flex items-center justify-center transition ease-in-out duration-350 border-1 border-solid border-transparent box-border",
             { 'border-pink-400!': miracleNode.value },
           )}
           onClick={handleMiracleNodeRemove}
