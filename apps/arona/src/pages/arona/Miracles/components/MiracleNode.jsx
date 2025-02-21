@@ -6,7 +6,6 @@ import Ref from '@arona/components/Ref'
 import Position from '@arona/components/Position'
 import Temp from '@arona/components/Temp'
 import Profile from '@arona/components/Profile'
-import Renderer from '@arona/components/Renderer'
 
 export function MiracleNode({ miracleNode, editor, mapView, onSelect, onDragStart }) {
   const ref = useRef()
@@ -23,10 +22,10 @@ export function MiracleNode({ miracleNode, editor, mapView, onSelect, onDragStar
   const selectModeTimer = useRef()
 
   /**
-   * 1. 我们有 onSelect 的时候，也需要 onUnselect 的时候。
-   * onSelect 的 mouseUp 绑定在 window 上，onUnselect 将会在外层进行处理。
-   * 此时冒泡顺序是 onUnselect -> onSelect，而我们想要是 onSelect -> onUnselect 会比较符合认知。
-   * 所以让 onSelect 在捕获阶段执行来改变顺序。
+   * 1. 我们有 onSelect 的时候, 也自然需要 onUnselect 的时候
+   * onSelect 的 mouseUp 绑定在 window 上, onUnselect 将会在外层进行处理
+   * 此时冒泡顺序是 onUnselect -> onSelect, 而我们想要的是 onSelect -> onUnselect, 这样才会比较符合认知
+   * 所以让 onSelect 在捕获阶段执行来改变顺序
    */
   const handleMouseDown = useCallback(event => {
     mouseDown.current.time = Date.now()
@@ -39,13 +38,7 @@ export function MiracleNode({ miracleNode, editor, mapView, onSelect, onDragStar
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('mouseup', handleMouseUp, true)
 
-      /* Drag */
-      arona.addComponent(miracleNode, Renderer, entity => {
-        const position = toMiracleNodeRenderCoord(entity, editor, mapView.getExpectZoom())
-        ref.current.style.transform = `translate(${position.x}px, ${position.y}px)`
-      })
-
-      onDragStart({ miracleNode, event })
+      onDragStart({ miracleNode, $miracleNode: ref.current, event })
     }, 250)
 
     window.addEventListener('mousemove', handleMouseMove)
@@ -65,12 +58,7 @@ export function MiracleNode({ miracleNode, editor, mapView, onSelect, onDragStar
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('mouseup', handleMouseUp, true)
 
-      arona.addComponent(miracleNode, Renderer, entity => {
-        const position = toMiracleNodeRenderCoord(entity, editor, mapView.getExpectZoom())
-        ref.current.style.transform = `translate(${position.x}px, ${position.y}px)`
-      })
-
-      onDragStart({ miracleNode, event })
+      onDragStart({ miracleNode, $miracleNode: ref.current, event })
     }
 
     function handleMouseUp(event) {

@@ -54,10 +54,6 @@ function tryGetMiracleNode(position, halfWidth, halfHeight, nodes) {
   return miracle
 }
 
-function useKeyboardEvents() {
-
-}
-
 function useRuler() {
   const startPosition = useRef({
     x: 0,
@@ -89,56 +85,95 @@ function useRuler() {
   }
 }
 
-function useDragHelper({
-  onDragStart,
-  onDragging,
-  onDragStop,
-}) {
+function useDragHelper(options) {
   const ruler = useRuler()
+  const targetStartPosition = useRef({
+    x: 0,
+    y: 0,
+  })
   const isEnabled = useRef(false)
-  const context = useRef({})
+  const context = options.context ?? useRef({})
 
   return {
     context,
     startPosition: ruler.startPosition,
     curPosition: ruler.curPosition,
-    setPosition(position) {
-      const currentPosition = dragger.current.currentPosition
-
-      currentPosition.x = position.x
-      currentPosition.y = position.y
+    targetStartPosition: ruler.targetStartPosition,
+    get enabled() {
+      return isEnabled.current
+    },
+    targetStartAt(position) {
+      targetStartPosition.current.x = position.x
+      targetStartPosition.current.y = position.y
     },
     start(position) {
       isEnabled.current = true
       ruler.startAt(position)
-      cb(ruler.curPosition, ruler.startPosition, context.current)
 
-      onDragStart(ruler.curPosition, ruler.startPosition, context.current)
+      options.onDragStart(context.current)
     },
-    dragTo(position) {
+    moveTo(position) {
       ruler.moveTo(position)
 
-      onDragging(ruler.curPosition, ruler.startPosition, context.current)
+      options.onDragging({
+        name: options.name,
+        curPosition: ruler.curPosition,
+        startPosition: ruler.startPosition,
+        targetStartPosition: targetStartPosition.current,
+        context: context.current,
+      })
     },
-    stop(cb) {
+    stop() {
       isEnabled.current = false
-      cb(ruler.curPosition, ruler.startPosition, context.current)
 
-      onDragStop(state.current, initialState.current, context.current)
+      options.onDragStop(context.current)
     },
     reset() {
       isEnabled.current = false
+
+      targetStartPosition.current.x = 0
+      targetStartPosition.current.y = 0
+
       ruler.reset()
     },
   }
 }
 
-function useMiracleNodeDragger() {
-  const mouseDragger = useDragHelper()
-  const keyboardDragger = useDragHelper()
+function useMiracleNodeDragger({
+  onDragStart,
+  onDragging,
+  onDragStop,
+}) {
+  const context = useRef({})
+  const mouseDragger = useDragHelper({
+    name: 'mouse',
+    context,
+    onDragStart,
+    onDragging,
+    onDragStop,
+  })
+  const keyboardDragger = useDragHelper({
+    name: 'keyboard',
+    context,
+    onDragStart,
+    onDragging,
+    onDragStop,
+  })
 
   return {
-
+    mouseDragger,
+    keyboardDragger,
+    get enabled() {
+      return mouseDragger.enabled || keyboardDragger.enabled
+    },
+    getContext() {
+      return context.current
+    },
+    reset() {
+      mouseDragger.reset()
+      keyboardDragger.reset()
+      context.current = {}
+    },
   }
 }
 
@@ -154,109 +189,67 @@ export default function MiracleEditor({ miracle, editor = MiracleEditorOptions }
     value: null
   })
 
-  const dragging = useRef({
-    enabled: false,
-    miracleNode: null,
-    triggerPosition: {
-      x: 0,
-      y: 0,
+  const dragger = useMiracleNodeDragger({
+    onDragStart(context) {
+      const { miracleNode, $miracleNode } = context
+
+      arona.addComponent(miracleNode, Renderer, entity => {
+        const position = toMiracleNodeRenderCoord(entity, editor, mapView.getExpectZoom())
+        $miracleNode.style.transform = `translate(${position.x}px, ${position.y}px)`
+      })
     },
-    anchorPosition: {
-      x: 0,
-      y: 0,
-    }
+    onDragging({ curPosition, startPosition, targetStartPosition, context, name }) {
+      const { miracleNode } = context
+      const zoom = name === 'keyboard' ? 1 : mapView.getExpectZoom()
+
+      miracleNode[Position].x = targetStartPosition.x + (curPosition.x - startPosition.x) / zoom
+      miracleNode[Position].y = targetStartPosition.y + (curPosition.y - startPosition.y) / zoom
+    },
+    onDragStop(context) {
+      const { miracleNode } = context
+      /* 对齐网格 */
+      miracleNode[Position].x = Math.round(miracleNode[Position].x / editor.magnetX) * editor.magnetX
+      miracleNode[Position].y = Math.round(miracleNode[Position].y / editor.magnetY) * editor.magnetY
+
+      /* 删除 MiracleNode 的渲染器 */
+      arona.delay(() => {
+        arona.removeComponent(miracleNode, Renderer)
+      })
+
+      dragger.reset()
+    },
   })
 
-  useEffect(() => {
-    setSelectedMiracleNode({ value: null })
-    setSidePanelShow(false)
-
-    dragging.current.miracleNode = null
-    dragging.current.triggerPosition = {
-      x: 0,
-      y: 0,
-    }
-    dragging.current.anchorPosition = {
-      x: 0,
-      y: 0,
-    }
-
-    mapView.zoom(1)
-    mapView.lookAt(rootNode[Position])
-  }, [miracle])
-
   useMouseEvent('move', (mouse, event) => {
-    if (!dragging.current.enabled) {
-      return
-    }
+    if (dragger.mouseDragger.enabled) {
+      const { miracleNode } = dragger.getContext()
+      const cursorPosition = mapView.screenToMapView({
+        x: event.clientX,
+        y: event.clientY,
+      })
 
-    const { miracleNode, triggerPosition, anchorPosition } = dragging.current
+      dragger.mouseDragger.moveTo(cursorPosition)
 
-    const position = mapView.screenToMapView({
-      x: event.clientX,
-      y: event.clientY,
-    })
-
-    const zoom = mapView.getExpectZoom()
-
-    miracleNode[Position].x = anchorPosition.x + (position.x - triggerPosition.x) / zoom
-    miracleNode[Position].y = anchorPosition.y + (position.y - triggerPosition.y) / zoom
-
-    if (selectedMiracleNode.value != null) {
-      mapView.pan(miracleNode[Position])
+      if (selectedMiracleNode.value != null) {
+        mapView.pan(miracleNode[Position])
+      }
     }
   })
 
   useMouseEvent('up', (mouse, event) => {
-    if (!dragging.current.enabled) {
-      return
-    }
+    if (dragger.mouseDragger.enabled) {
+      const { miracleNode } = dragger.getContext()
+      const cursorPosition = mapView.screenToMapView({
+        x: event.clientX,
+        y: event.clientY,
+      })
 
-    const { miracleNode, triggerPosition, anchorPosition } = dragging.current
+      dragger.mouseDragger.moveTo(cursorPosition)
+      dragger.mouseDragger.stop()
 
-    const position = mapView.screenToMapView({
-      x: event.clientX,
-      y: event.clientY,
-    })
-
-    const zoom = mapView.getExpectZoom()
-
-    let x = anchorPosition.x + (position.x - triggerPosition.x) / zoom
-    let y = anchorPosition.y + (position.y - triggerPosition.y) / zoom
-
-    /* 对齐网格 */
-    x = Math.round(x / editor.magnetX) * editor.magnetX
-    y = Math.round(y / editor.magnetY) * editor.magnetY
-
-    miracleNode[Position].x = x
-    miracleNode[Position].y = y
-
-    if (selectedMiracleNode.value != null) {
-      mapView.pan(miracleNode[Position])
-    }
-
-    /* 清除上下文信息 */
-    dragging.current.enabled = false
-
-    arona.delay(() => {
-      arona.removeComponent(miracleNode, Renderer)
-    })
-  })
-
-  useSeeleFrame(delta => {
-    const camera = mapView.camera
-
-    if (keyboard.current.w) {
-      camera[Vec3].y -= 0.01 * delta
-    }
-    if (keyboard.current.s) {
-      camera[Vec3].y += 0.01 * delta
-    }
-    if (keyboard.current.a) {
-      camera[Vec3].x -= 0.01 * delta
-    }
-    if (keyboard.current.d) {
-      camera[Vec3].x += 0.01 * delta
+      if (selectedMiracleNode.value != null) {
+        mapView.pan(miracleNode[Position])
+      }
     }
   })
 
@@ -297,8 +290,6 @@ export default function MiracleEditor({ miracle, editor = MiracleEditorOptions }
 
     /* keydown 会持续触发, 为了防止重复操作, 只在初次触发后进行拖拽前置判断 */
     if (!keyboardContext.current.lock) {
-      dragging.current.miracleNode = miracleNode
-
       keyboard.current.f = true
       keyboardContext.current.f.keydownTime = Date.now()
     }
@@ -309,7 +300,7 @@ export default function MiracleEditor({ miracle, editor = MiracleEditorOptions }
     keyboardContext.current.lock = false
 
     /* 如果未激活 dragging 逻辑, 处理 selected 逻辑 */
-    if (!dragging.current.enabled) {
+    if (!dragger.keyboardDragger.enabled) {
       const miracleNode = tryGetMiracleNode(mapView.camera[Position], editor.miracleWidth / 2, editor.miracleHeight / 2, nodes)
 
       if (!miracleNode) {
@@ -329,33 +320,12 @@ export default function MiracleEditor({ miracle, editor = MiracleEditorOptions }
       return
     }
 
-    /* 处理 dragging 逻辑 */
-    const { miracleNode, triggerPosition, anchorPosition } = dragging.current
+    if (dragger.keyboardDragger.enabled) {
+      const cursorPosition = mapView.camera[Position]
 
-    const position = mapView.camera[Position]
-
-    const zoom = mapView.getExpectZoom()
-
-    let x = anchorPosition.x + (position.x - triggerPosition.x) / zoom
-    let y = anchorPosition.y + (position.y - triggerPosition.y) / zoom
-
-    /* 对齐网格 */
-    x = Math.round(x / editor.magnetX) * editor.magnetX
-    y = Math.round(y / editor.magnetY) * editor.magnetY
-
-    miracleNode[Position].x = x
-    miracleNode[Position].y = y
-
-    if (selectedMiracleNode.value != null) {
-      mapView.pan(miracleNode[Position])
+      dragger.keyboardDragger.moveTo(cursorPosition)
+      dragger.keyboardDragger.stop()
     }
-
-    /* 清除上下文信息 */
-    dragging.current.enabled = false
-
-    arona.delay(() => {
-      arona.removeComponent(miracleNode, Renderer)
-    })
   }, { event: 'keyup' }, [nodes])
 
   useSeeleFrame(() => {
@@ -363,7 +333,7 @@ export default function MiracleEditor({ miracle, editor = MiracleEditorOptions }
       return
     }
 
-    if (!dragging.current.enabled) {
+    if (!dragger.keyboardDragger.enabled) {
       /* 根据 f 的长按时间，决定是否进入拖拽模式 */
       const duration = Date.now() - keyboardContext.current.f.keydownTime
 
@@ -371,39 +341,37 @@ export default function MiracleEditor({ miracle, editor = MiracleEditorOptions }
         return
       }
 
-      const miracleNode = dragging.current.miracleNode
+      const miracleNode = tryGetMiracleNode(mapView.camera[Position], editor.miracleWidth / 2, editor.miracleHeight / 2, nodes)
+
+      if (miracleNode == null) {
+        return
+      }
+
       const $miracleNode = document.getElementById(`miracleNode.${miracleNode[ID]}`)
 
       if (!$miracleNode) {
         return
       }
 
-      dragging.current.enabled = true
+      const context = dragger.getContext()
 
-      setDraggingContext(miracleNode, miracleNode[Position], mapView.camera[Position])
-
-      arona.addComponent(miracleNode, Renderer, entity => {
-        const position = toMiracleNodeRenderCoord(entity, editor, mapView.getExpectZoom())
-        $miracleNode.style.transform = `translate(${position.x}px, ${position.y}px)`
-      })
+      context.miracleNode = miracleNode
+      context.$miracleNode = $miracleNode
+      dragger.keyboardDragger.targetStartAt(miracleNode[Position])
+      dragger.keyboardDragger.start(mapView.camera[Position])
 
       return
     }
 
-    if (dragging.current.enabled) {
-      const { miracleNode, triggerPosition, anchorPosition } = dragging.current
+    if (dragger.keyboardDragger.enabled) {
+      const cursorPosition = mapView.camera[Position]
 
-      const position = mapView.camera[Position]
-
-      const zoom = mapView.getExpectZoom()
-
-      miracleNode[Position].x = anchorPosition.x + (position.x - triggerPosition.x) / zoom
-      miracleNode[Position].y = anchorPosition.y + (position.y - triggerPosition.y) / zoom
+      dragger.keyboardDragger.moveTo(cursorPosition)
     }
-  })
+  }, [nodes])
 
   const handleMiracleNodeUnselect = useCallback(() => {
-    if (dragging.current.enabled) {
+    if (dragger.enabled) {
       return
     }
 
@@ -437,27 +405,18 @@ export default function MiracleEditor({ miracle, editor = MiracleEditorOptions }
     })
   }, [])
 
-  const setDraggingContext = useCallback((miracleNode, anchorPosition, triggerPosition) => {
-    dragging.current.miracleNode = miracleNode
-    dragging.current.anchorPosition = {
-      x: anchorPosition.x,
-      y: anchorPosition.y,
-    }
-    dragging.current.triggerPosition = {
-      x: triggerPosition.x,
-      y: triggerPosition.y,
-    }
-  }, [])
-
-  const handleMiracleNodeDragStart = useCallback(({ miracleNode, event }) => {
-    dragging.current.enabled = true
+  const handleMiracleNodeDragStart = useCallback(({ miracleNode, $miracleNode, event }) => {
+    const context = dragger.getContext()
 
     const position = mapView.screenToMapView({
       x: event.clientX,
       y: event.clientY,
     })
 
-    setDraggingContext(miracleNode, miracleNode[Position], position)
+    context.miracleNode = miracleNode
+    context.$miracleNode = $miracleNode
+    dragger.mouseDragger.targetStartAt(miracleNode[Position])
+    dragger.mouseDragger.start(position)
   }, [])
 
   const handleMiracleNodeSave = useCallback(() => {
@@ -503,6 +462,33 @@ export default function MiracleEditor({ miracle, editor = MiracleEditorOptions }
     { event: 'keyup' },
     [selectedMiracleNode]
   )
+
+  useEffect(() => {
+    setSelectedMiracleNode({ value: null })
+    setSidePanelShow(false)
+
+    dragger.reset()
+
+    mapView.zoom(1)
+    mapView.lookAt(rootNode[Position])
+  }, [miracle])
+
+  useSeeleFrame(delta => {
+    const camera = mapView.camera
+
+    if (keyboard.current.w) {
+      camera[Vec3].y -= 0.01 * delta
+    }
+    if (keyboard.current.s) {
+      camera[Vec3].y += 0.01 * delta
+    }
+    if (keyboard.current.a) {
+      camera[Vec3].x -= 0.01 * delta
+    }
+    if (keyboard.current.d) {
+      camera[Vec3].x += 0.01 * delta
+    }
+  })
 
   return (
     <div className="miracle-editor flex-1 flex relative overflow-hidden select-none" onMouseUp={handleMiracleNodeUnselect}>
@@ -550,7 +536,7 @@ export default function MiracleEditor({ miracle, editor = MiracleEditorOptions }
   )
 }
 
-function MiracleEditorBottomBar({ miracle, miracleNode, mapView, onCreate, onRemove }) {
+function MiracleEditorBottomBar({ miracleNode, mapView, onCreate, onRemove }) {
   const camera = mapView.camera
 
   const [debug, rerender] = useState()
@@ -564,7 +550,7 @@ function MiracleEditorBottomBar({ miracle, miracleNode, mapView, onCreate, onRem
   }, [debug])
 
   const handleMiracleNodeCreate = useCallback(() => {
-    onCreate(entity)
+    onCreate()
   }, [onCreate])
 
   const handleStopPropagation = useCallback(event => {
