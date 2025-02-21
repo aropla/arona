@@ -42,7 +42,7 @@ export default forwardRef(function AronaMapView({ controller, children, mapViewR
     <div className="arona-map-view flex-1 flex">
       <div
         ref={mapViewRef}
-        className="map-view bg-white/5 rounded-tr rounded-br flex-1 flex overflow-hidden"
+        className="map-view bg-white/5 rounded flex-1 flex overflow-hidden"
       >
         {/* <div className="camera rounded-full w-2 h-2 absolute bg-red-300 top-1/2 left-1/2" ref={cameraRef}></div> */}
         <div
