@@ -60,6 +60,36 @@ export function EntityManager(componentManager, bus) {
         cb(archetypes[i])
       }
     },
+    dehydrate() {
+      const result = []
+
+      archetypes.forEach(archetype => {
+        if (archetype.size() === 0) {
+          return
+        }
+
+        result.push(archetype.dehydrate())
+      })
+
+      return result
+    },
+    hydrate(dehydration, patcher) {
+      const idValues = dehydration.id
+      const entities = dehydration.entities
+
+      const archetypeBuilder = ArchetypeBuilder()
+
+      for (let i = 0; i < idValues.length; i++) {
+        const oldID = idValues[i]
+        const id = patcher.getNew(oldID) ?? oldID
+
+        archetypeBuilder.addComponent(id)
+      }
+
+      const archetype = register(archetypeBuilder)
+
+      archetype.hydrate(entities, patcher)
+    },
   }
 
   function find(entity) {
@@ -83,12 +113,12 @@ export function EntityManager(componentManager, bus) {
     const components = mask.values()
     const creators = components.map(componentManager.get)
 
-    const creator = () => {
+    const creator = onCreateProps => {
       const instance = Object.create(null)
 
       for (let i = 0; i < components.length; i++) {
         const component = components[i]
-        const props = propsMap[component] ?? {}
+        const props = (onCreateProps !== undefined ? onCreateProps(propsMap[component], component) : propsMap[component]) ?? {}
 
         instance[component] = creators[i](props)
       }
@@ -112,13 +142,7 @@ export function Archetype(archetypeBuilder, creator, register, componentManager,
     get mask() {
       return archetypeBuilder.mask
     },
-    create() {
-      const entity = creator()
-
-      bus.emit('entity:created', { archetype: self, entity })
-
-      return add(entity)
-    },
+    create,
     add,
     remove,
     has(entity) {
@@ -181,6 +205,38 @@ export function Archetype(archetypeBuilder, creator, register, componentManager,
     setThis(instance) {
       self = instance
     },
+    dehydrate() {
+      const id = archetypeBuilder.values()
+
+      return {
+        id,
+        entities,
+      }
+    },
+    hydrate(dehydration, patcher) {
+      for (let i = 0; i < dehydration.length; i++) {
+        const oldEntity = dehydration[i]
+
+        create((props, component) => {
+          const oldComponent = patcher.getOld(component) ?? component
+          const newProps = oldEntity[oldComponent]
+
+          if (typeof props === 'object' && typeof newProps === 'object') {
+            return { ...props, ...newProps }
+          }
+
+          return newProps ?? {}
+        })
+      }
+    },
+  }
+
+  function create(onCreateProps) {
+    const entity = creator(onCreateProps)
+
+    bus.emit('entity:created', { archetype: self, entity })
+
+    return add(entity)
   }
 
   function hasComponent(component) {
@@ -256,6 +312,9 @@ export function ArchetypeBuilder() {
     },
     key() {
       return mask.toString()
+    },
+    values() {
+      return mask.values()
     },
     setMask(value) {
       mask = value

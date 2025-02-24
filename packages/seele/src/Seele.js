@@ -1,20 +1,13 @@
 import { EntityManager, ArchetypeBuilder } from './Entity'
 import { Loop } from './Loop'
 import { QueryManager, QueryBuilder } from './Query'
-import { ComponentManager, ComponentRecorder } from './Component'
+import { ComponentManager, ComponentRegistry } from './Component'
 import { SystemManager } from './System'
 import { Bus } from './fairy'
 import { PluginManager } from './Plugin'
+import { Upgrader } from './Upgrader'
 
-export const componentRecorder = ComponentRecorder()
-
-/**
- * Build-in components
- */
-export const Enabled = defineComponent('Enabled')
-export const Disabled = defineComponent('Disabled')
-export const Removed = defineComponent('removed')
-export const Dirty = defineComponent('dirty')
+export const componentRegistry = ComponentRegistry()
 
 export function Seele() {
   const seele = {
@@ -27,17 +20,17 @@ export function Seele() {
 
   const bus = Bus()
 
-  const componentManager = ComponentManager(componentRecorder, bus)
+  const componentManager = ComponentManager(componentRegistry, bus)
   const entityManager = EntityManager(componentManager, bus)
   const queryManager = QueryManager(bus)
   const systemManager = SystemManager(seele, bus)
   const pluginManager = PluginManager()
+  const upgrader = Upgrader(seele)
   const loop = Loop()
 
   const delayTasks = []
 
   init()
-  initBuildinComponents()
 
   return {
     component: componentManager,
@@ -130,8 +123,37 @@ export function Seele() {
     },
     debug: {
       getName(component) {
-        return componentRecorder.getName(component)
+        return componentRegistry.getName(component)
       }
+    },
+    hydrate(dehydration) {
+      if (dehydration == null) {
+        return
+      }
+
+      const { patcher, added, removed, changed } = upgrader.resolve(dehydration)
+      const oldArchetypes = dehydration.archetypes
+
+      for (let i = 0; i < oldArchetypes.length; i++) {
+        const oldArchetype = oldArchetypes[i]
+
+        entityManager.hydrate(oldArchetype, patcher)
+      }
+
+      return { patcher, added, removed, changed }
+    },
+    dehydrate(options = {}) {
+      const dehydration = Object.create(null)
+
+      if (options.component !== false) {
+        dehydration.component = componentManager.dehydrate()
+      }
+
+      if (options.archetype !== false) {
+        dehydration.archetypes = entityManager.dehydrate()
+      }
+
+      return dehydration
     },
   }
 
@@ -140,13 +162,6 @@ export function Seele() {
     loop.setUpdate(update)
     loop.setDraw(renderer)
     loop.setEnd(afterUpdate)
-  }
-
-  function initBuildinComponents() {
-    componentManager.register(Enabled)
-    componentManager.register(Disabled)
-    componentManager.register(Removed)
-    componentManager.register(Dirty)
   }
 
   function ready() {
@@ -209,7 +224,7 @@ export function Seele() {
 }
 
 export function defineTagComponent(name) {
-  return componentRecorder.add(name, () => true)
+  return componentRegistry.add(name, () => true)
 }
 
 export function defineComponent(componentCreator, name) {
@@ -218,7 +233,7 @@ export function defineComponent(componentCreator, name) {
     return defineTagComponent(name)
   }
 
-  return componentRecorder.add(name, componentCreator)
+  return componentRegistry.add(name, componentCreator)
 }
 
 export function defineEntity(entityCreator) {

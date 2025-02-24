@@ -1,17 +1,17 @@
 import { IDGenerator } from "./utils"
 
-export function ComponentManager(componentRecorder, bus) {
-  const creatorMap = Object.create(null)
+export function ComponentManager(componentRegistry, bus) {
+  const creatorMap = new Map()
 
   return {
     register(component) {
-      creatorMap[component] = componentRecorder.get(component)
+      creatorMap.set(component, componentRegistry.get(component))
     },
     has(component) {
-      return creatorMap[component] !== undefined
+      return creatorMap.has(component)
     },
     get(component) {
-      return creatorMap[component]
+      return creatorMap.get(component)
     },
     create,
     addComponent(entity, component, props, archetype, newArchetype) {
@@ -25,12 +25,28 @@ export function ComponentManager(componentRecorder, bus) {
       bus.emit('component:removed', { archetype, newArchetype, entity, component })
     },
     getMaxID() {
-      return componentRecorder.getID()
+      return componentRegistry.getID()
+    },
+    dehydrate() {
+      const names = []
+      const components = []
+
+      creatorMap.forEach((_, id) => {
+        const name = componentRegistry.getName(id)
+
+        names.push(name)
+        components.push(id)
+      })
+
+      return {
+        names,
+        components,
+      }
     },
   }
 
   function create(component, props) {
-    const creator = creatorMap[component]
+    const creator = creatorMap.get(component)
 
     if (!creator) {
       console.error(`[Seele.ComponentManager] create component failed, component ${component} not found`)
@@ -42,40 +58,58 @@ export function ComponentManager(componentRecorder, bus) {
   }
 }
 
-export function ComponentRecorder(idGen) {
+export function ComponentRegistry(idGen) {
   idGen = (idGen && typeof idGen.gen === 'function') ? idGen : IDGenerator()
-  const idMap = Object.create(null) // id -> name
-  const nameMap = Object.create(null) // name -> id
-  const creatorMap = Object.create(null) // id -> creator
-  const metaMap = Object.create(null) // id -> meta
+  const idMap = new Map() // id -> name
+  const nameMap = new Map() // name -> id
+  const creatorMap = new Map() // id -> creator
+  const metaMap = new Map() // id -> meta
 
   return {
     add(name, creator, meta) {
-      if (nameMap[name] === undefined) {
-        const id = idGen.gen()
+      const component = nameMap.get(name)
 
-        nameMap[name] = id
-        idMap[id] = name
-        creatorMap[id] = creator
-        metaMap[id] = meta
+      if (component != null) {
+        return component
       }
 
-      return nameMap[name]
+      const id = idGen.gen()
+
+      nameMap.set(name, id)
+      idMap.set(id, name)
+      creatorMap.set(id, creator)
+      metaMap.set(id, meta)
+
+      return id
     },
     get(id) {
-      return creatorMap[id]
+      return creatorMap.get(id)
     },
     getName(id) {
-      return idMap[id]
+      return idMap.get(id)
     },
     getMeta(id) {
-      return metaMap[id]
+      return metaMap.get(id)
     },
     setID(value) {
       idGen.set(value)
     },
     getID() {
       return idGen.get()
+    },
+    dehydrate() {
+      const names = []
+      const components = []
+
+      nameMap.forEach((id, name) => {
+        names.push(name)
+        components.push(id)
+      })
+
+      return {
+        names,
+        components,
+      }
     },
   }
 }

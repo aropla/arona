@@ -1,6 +1,6 @@
 import { Noop } from './utils'
 
-export function SystemManager(seele, bus) {
+export function SystemManager(seele) {
   const systems = []
 
   return {
