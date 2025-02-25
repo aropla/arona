@@ -15,7 +15,7 @@ export function ComponentManager(componentRegistry, bus) {
     },
     create,
     addComponent(entity, component, props, archetype, newArchetype) {
-      entity[component] = create(component, props)
+      entity[component] = create(component, props ?? {})
 
       bus.emit('component:added', { archetype, newArchetype, entity, component })
     },
