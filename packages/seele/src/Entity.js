@@ -2,6 +2,7 @@ import { BitSet } from "./utils"
 
 export function EntityManager(componentManager, bus) {
   const archetypeMap = new Map()
+  const nameToArchetypeMap = new Map()
   const archetypes = []
 
   const register = archetypeBuilder => {
@@ -16,6 +17,10 @@ export function EntityManager(componentManager, bus) {
     archetypeMap.set(archetypeKey, archetype)
     archetypes.push(archetype)
 
+    if (isValidArchetypeName(archetype.name)) {
+      nameToArchetypeMap.set(archetype.name, archetype)
+    }
+
     bus.emit('archetype:created', { archetype })
 
     return archetype
@@ -27,6 +32,13 @@ export function EntityManager(componentManager, bus) {
     find,
     has(archetypeBuilder) {
       return archetypeMap.has(archetypeBuilder.key())
+    },
+    getByName(name) {
+      if (isValidArchetypeName(name)) {
+        return nameToArchetypeMap.get(name)
+      }
+
+      return
     },
     /**
      * 1. Get Archetype
@@ -75,18 +87,23 @@ export function EntityManager(componentManager, bus) {
     },
     hydrate(dehydration, patcher) {
       const idValues = dehydration.id
+      const name = dehydration.name
       const entities = dehydration.entities
 
-      const archetypeBuilder = ArchetypeBuilder()
+      let archetype = nameToArchetypeMap.get(name)
 
-      for (let i = 0; i < idValues.length; i++) {
-        const oldID = idValues[i]
-        const id = patcher.getNew(oldID) ?? oldID
+      if (!archetype) {
+        const archetypeBuilder = ArchetypeBuilder()
 
-        archetypeBuilder.addComponent(id)
+        for (let i = 0; i < idValues.length; i++) {
+          const oldID = idValues[i]
+          const id = patcher.getNew(oldID) ?? oldID
+
+          archetypeBuilder.addComponent(id)
+        }
+
+        archetype = register(archetypeBuilder)
       }
-
-      const archetype = register(archetypeBuilder)
 
       archetype.hydrate(entities, patcher)
     },
@@ -136,8 +153,10 @@ export function Archetype(archetypeBuilder, creator, register, componentManager,
   const adjacent = new Map()
 
   let self = null
+  const name = archetypeBuilder.getName()
 
   return {
+    name,
     entities,
     get mask() {
       return archetypeBuilder.mask
@@ -210,6 +229,7 @@ export function Archetype(archetypeBuilder, creator, register, componentManager,
 
       return {
         id,
+        name,
         entities,
       }
     },
@@ -280,10 +300,25 @@ export function Archetype(archetypeBuilder, creator, register, componentManager,
 }
 
 export function ArchetypeBuilder() {
+  const options = {
+    name: ''
+  }
   let mask = BitSet(8)
   let propsMap = Object.create(null)
 
   return {
+    getName() {
+      return options.name
+    },
+    name(value) {
+      if (!isValidArchetypeName(value)) {
+        console.error(`[Seele.ArchetypeBuilder] Archetype name ${value} is not valid`)
+
+        return
+      }
+
+      options.name = value
+    },
     addComponent(component, props) {
       mask.or(component)
       propsMap[component] = props
@@ -329,4 +364,8 @@ export function ArchetypeBuilder() {
       return propsMap
     },
   }
+}
+
+function isValidArchetypeName(value) {
+  return typeof value === 'string' && value !== ''
 }
