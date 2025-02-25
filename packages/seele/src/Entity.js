@@ -314,10 +314,12 @@ export function ArchetypeBuilder() {
       if (!isValidArchetypeName(value)) {
         console.error(`[Seele.ArchetypeBuilder] Archetype name ${value} is not valid`)
 
-        return
+        return this
       }
 
       options.name = value
+
+      return this
     },
     addComponent(component, props) {
       mask.or(component)
