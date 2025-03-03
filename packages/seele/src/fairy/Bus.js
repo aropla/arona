@@ -24,7 +24,7 @@ export function Bus() {
     }
 
     const len = fns.length
-    for (let i = 0; i < len; i++) {
+    for (let i = len - 1; i >= 0; i--) {
       fns[i](...options)
     }
   }
