@@ -17,7 +17,6 @@ export function QueryManager(bus) {
       }
 
       query = Query(queryBuilder, bus)
-      query.setThis(query)
 
       queries.push(query)
       queryMap.set(queryBuilder, query)
@@ -45,8 +44,6 @@ export function Query(queryBuilder, bus) {
   const archetypes = []
   const matcher = queryBuilder.build()
   const queryBus = Bus()
-
-  let self = null
 
   return {
     archetypes,
@@ -148,9 +145,6 @@ export function Query(queryBuilder, bus) {
     },
     emit(name, ...options) {
       queryBus.emit(name, ...options)
-    },
-    setThis(instance) {
-      self = instance
     },
   }
 
