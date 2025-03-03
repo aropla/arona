@@ -1,8 +1,10 @@
 import { defineSystem } from 'seele'
-import Renderer from '@arona/components/Renderer'
+import { Renderer } from '@arona/components'
 
 export default defineSystem(seele => {
   const query = seele.query(q => q.every(Renderer))
+
+  console.log('renderer', query)
 
   return {
     onRender(interp) {
@@ -12,7 +14,10 @@ export default defineSystem(seele => {
 
       query.traverse(entity => {
         const renderer = entity[Renderer]
-        renderer.render(entity, interp)
+
+        if (typeof renderer.render === 'function') {
+          renderer.render(entity, interp)
+        }
       })
     },
   }

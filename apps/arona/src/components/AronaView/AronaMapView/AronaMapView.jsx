@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 import { forwardRef } from 'react'
 import { useRef } from 'react'
 import arona from '@arona'
-import Renderer from '@arona/components/Renderer'
+import { Renderer } from '@arona/components'
 
 export { useAronaMapView } from './controller'
 

@@ -1,7 +1,8 @@
 import { defineEntity } from 'seele'
-import Renderer from '@arona/components/Renderer'
+import { Renderer } from '@arona/components'
 
-export default defineEntity(entity => {
+export const RenderObj = defineEntity(entity => {
   entity
+    .name('RenderObj')
     .addComponent(Renderer)
 })

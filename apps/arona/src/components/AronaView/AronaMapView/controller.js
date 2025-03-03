@@ -1,10 +1,11 @@
-import { buildController } from '@/components'
-import Position from '@arona/components/Position'
-import Vec3 from '@arona/components/Vec3'
-import Camera from '@arona/entities/Camera'
-import arona from '@arona'
 import { useEffect } from 'react'
 import gsap from 'gsap'
+
+import { buildController } from '@/components'
+
+import arona from '@arona'
+import { Position, Vec3 } from '@arona/components'
+import { Camera } from '@arona/entities'
 
 const aronaMapView = () => {
   const camera = arona.createEntity(Camera)

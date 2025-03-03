@@ -1,13 +1,11 @@
 import { defineEntity } from 'seele'
-import Profile from '@arona/components/Profile'
-import Physical from '@arona/components/Physical'
-import Vec3 from '@arona/components/Vec3'
-import Position from '@arona/components/Position'
+import { Profile, Physical, Vec3, Position } from '@arona/components'
 
-export default defineEntity(entity => {
+export const Camera = defineEntity(entity => {
   entity
+    .name('Camera')
     .addComponent(Profile, {
-      name: 'Camera~',
+      name: 'Camera',
     })
     .addComponent(Physical, {
       friction: 0.86,

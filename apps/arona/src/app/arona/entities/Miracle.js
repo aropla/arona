@@ -1,16 +1,19 @@
 import { defineEntity } from 'seele'
-import ID from '@arona/components/ID'
-import Profile from '@arona/components/Profile'
-import MiracleRef from '@arona/components/MiracleRef'
-import Ref from '@arona/components/Ref'
+import { MiracleID, MiracleRef, Profile, Position, Noa, Selfie, CreatedAt } from '@arona/components'
 
-export default defineEntity(entity => {
+export const Miracle = defineEntity(entity => {
   entity
-    .addComponent(ID, '1')
-    .addComponent(Ref, '')
-    .addComponent(MiracleRef, '')
+    .name('Miracle')
+    .addComponent(MiracleID)
+    .addComponent(MiracleRef)
     .addComponent(Profile, {
-      name: 'HotaruA',
-      desc: 'P.A.I.M.O.N',
+      name: '[Miracle]',
+      desc: '',
     })
+    .addComponent(Selfie, {
+      url: '/default-miracle.jpg',
+    })
+    .addComponent(Position)
+    .addComponent(Noa)
+    .addComponent(CreatedAt)
 })

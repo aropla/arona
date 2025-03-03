@@ -1,20 +1,38 @@
 import { Seele } from 'seele'
-import ID from '@arona/components/ID'
-import Ref from '@arona/components/Ref'
-import Timer from '@arona/components/Timer'
-import Profile from '@arona/components/Profile'
-import Temp from '@arona/components/Temp'
-import Vec2 from '@arona/components/Vec2'
-import Vec3 from '@arona/components/Vec3'
-import MiracleRef from '@arona/components/MiracleRef'
-import Position from '@arona/components/Position'
-import Physical from '@arona/components/Physical'
-import Renderer from '@arona/components/Renderer'
+import {
+  MiracleRef,
+  MiracleNodeRef,
+  TravelerRef,
+  MemoRef,
+  MiracleID,
+  MiracleNodeID,
+  TravelerID,
+  MemoID,
+  Timer,
+  Profile,
+  Temp,
+  Vec2,
+  Vec3,
+  Position,
+  Physical,
+  Renderer,
+  Noa,
+  CreatedAt,
+  Selfie,
+  Status,
+  AuthorRef,
+} from '@arona/components'
 
-import Traveler from '@arona/entities/Traveler'
-import Miracle from '@arona/entities/Miracle'
-import Camera from '@arona/entities/Camera'
-import RenderObj from '@arona/entities/RenderObj'
+import {
+  Miracle,
+  MiracleNode,
+  Camera,
+  RenderObj,
+  Traveler,
+  Memo,
+} from '@arona/entities'
+
+import * as mocks from '@mocks'
 
 import MoveSystem from '@arona/systems/MoveSystem'
 import RenderSystem from '@arona/systems/RenderSystem'
@@ -22,15 +40,19 @@ import RenderSystem from '@arona/systems/RenderSystem'
 import SeeleReact from '@app/seele-react'
 import SeeleLocalStore from '@app/seele-local-store'
 
-import * as mocks from '@mocks'
-
 function Arona() {
   const seele = Seele()
 
   seele.vollerei()
-    .registerComponent(ID)
-    .registerComponent(Ref)
+    .registerComponent(MiracleID)
+    .registerComponent(MiracleNodeID)
+    .registerComponent(TravelerID)
+    .registerComponent(MemoID)
     .registerComponent(MiracleRef)
+    .registerComponent(MiracleNodeRef)
+    .registerComponent(TravelerRef)
+    .registerComponent(MemoRef)
+    .registerComponent(AuthorRef)
     .registerComponent(Timer)
     .registerComponent(Profile)
     .registerComponent(Temp)
@@ -39,11 +61,17 @@ function Arona() {
     .registerComponent(Vec3)
     .registerComponent(Physical)
     .registerComponent(Renderer)
+    .registerComponent(Noa)
+    .registerComponent(CreatedAt)
+    .registerComponent(Selfie)
+    .registerComponent(Status)
 
-    .registerEntity(Traveler)
     .registerEntity(Miracle)
+    .registerEntity(MiracleNode)
+    .registerEntity(Traveler)
     .registerEntity(Camera)
     .registerEntity(RenderObj)
+    .registerEntity(Memo)
 
     .registerSystem(MoveSystem)
 
@@ -52,18 +80,40 @@ function Arona() {
 
     .registerSystem(RenderSystem)
 
-  const nodes = mocks.miracleNodes
+  console.log('dehydrate', seele.dehydrate())
 
-  nodes.forEach(node => {
-    const entity = seele.createEntity(Miracle)
+  /* Deserialize */
+  const dehydration = JSON.parse(localStorage.getItem('arona'))
 
-    entity[ID] = node[ID]
-    entity[Ref] = node[Ref]
-    entity[MiracleRef] = node[MiracleRef]
-    entity[Profile] = node[Profile]
-    entity[Position] = node[Position]
-  })
+  /* Mocks */
+  if (!dehydration) {
+    mocks.miracles.forEach(node => {
+      const entity = seele.createEntity(Miracle)
 
+      entity[MiracleID] = node[MiracleID]
+      entity[MiracleRef] = node[MiracleRef]
+      entity[Profile] = node[Profile]
+    })
+
+    mocks.miracleNodes.forEach(node => {
+      const entity = seele.createEntity(MiracleNode)
+
+      entity[MiracleNodeID] = node[MiracleNodeID]
+      entity[MiracleNodeRef] = node[MiracleNodeRef]
+      entity[MiracleRef] = node[MiracleRef]
+      entity[Profile] = node[Profile]
+      entity[Position] = node[Position]
+    })
+  }
+
+  console.log('old', JSON.parse(JSON.stringify(dehydration)))
+
+  console.group('upgrade')
+  console.log(seele.hydrate(dehydration))
+  console.groupEnd('upgrade')
+
+  const hydration = seele.dehydrate()
+  console.log('cur', hydration)
   // seele.loop.setSimulationTimestep(1000 / 60 / 2)
   seele.start()
 
@@ -181,7 +231,7 @@ export default arona.seele
 //   seele.ready()
 
 //   /* createEntity */
-//   seele.createEntity(Cat, 2)
+//   seele.createEntity(Cat, null, 2)
 //   seele.createEntity(Fish)
 
 //   /* query */

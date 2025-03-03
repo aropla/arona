@@ -52,10 +52,7 @@ export function useSeeleQuery(queryBuilder, options = {}) {
   }
 
   useEffect(() => {
-    query.current.on('size:changed', () => {
-      console.log('size:changed')
-      render()
-    })
+    query.current.on('size:changed', render)
 
     return () => {
       query.current.off('size:changed', render)

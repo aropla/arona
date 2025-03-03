@@ -1,3 +1,3 @@
 import { defineComponent } from 'seele'
 
-export default defineComponent('temp')
+export const Temp = defineComponent('Temp')

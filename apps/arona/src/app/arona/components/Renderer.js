@@ -5,9 +5,9 @@ function Noop() {
 }
 
 // TOOD
-export default defineComponent(value => ({
+export const Renderer = defineComponent(value => ({
   render: value ?? Noop,
-}), 'renderer', {
+}), 'Renderer', {
   // TODO: skipSerialize is a temporary solution to avoid serialization of the component
   skipSerialize: true,
 })

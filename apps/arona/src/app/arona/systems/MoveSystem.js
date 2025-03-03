@@ -1,9 +1,5 @@
-import { defineSystem, Enabled, Removed } from 'seele'
-import Position from '@arona/components/Position'
-import Vec2 from '@arona/components/Vec2'
-import Vec3 from '@arona/components/Vec3'
-import Physical from '@arona/components/Physical'
-import Profile from '@arona/components/Profile'
+import { defineSystem } from 'seele'
+import { Position, Physical, Vec2, Vec3 } from '@arona/components'
 
 export default defineSystem(seele => {
   const env = {

@@ -1,12 +1,13 @@
 import { defineEntity } from 'seele'
-import ID from '@arona/components/ID'
-import Profile from '@arona/components/Profile'
+import { TravelerID, Profile, Selfie } from '@arona/components'
 
-export default defineEntity(entity => {
+export const Traveler = defineEntity(entity => {
   entity
-    .addComponent(ID, '1')
+    .name('Traveler')
+    .addComponent(TravelerID, '1')
     .addComponent(Profile, {
-      name: 'Hotaru',
-      desc: 'P.A.I.M.O.N',
+      name: '旅行者',
+      desc: '私と一緒に、海に帰ろう',
     })
+    .addComponent(Selfie)
 })

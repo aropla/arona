@@ -5,7 +5,7 @@ import { useEffect } from 'react'
 import editorbackgroundVertexShader from '@shaders/miracle-editor/vertex.glsl'
 import editorbackgroundFragmentShader from '@shaders/miracle-editor/fragment.glsl'
 import { Uniform } from 'three'
-import Position from '@arona/components/Position'
+import { Position } from '@arona/components'
 import plana from '/plana.png'
 import classNames from 'classnames'
 

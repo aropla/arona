@@ -1,5 +1,5 @@
 import { defineComponent } from 'seele'
 
-export default defineComponent(props => ({
+export const Physical = defineComponent((props = {}) => ({
   friction: props.friction ?? 1,
-}), 'physical')
+}), 'Physical')

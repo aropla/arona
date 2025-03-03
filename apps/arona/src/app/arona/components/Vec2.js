@@ -1,6 +1,6 @@
 import { defineComponent } from 'seele'
 
-export default defineComponent(props => ({
+export const Vec2 = defineComponent((props = {}) => ({
   x: props.x ?? 0,
   y: props.y ?? 0,
-}), 'vec2')
+}), 'Vec2')

@@ -36,7 +36,7 @@ function TimerRule(props) {
   }
 }
 
-export default defineComponent(props => {
+export const Timer = defineComponent((props = {}) => {
   return {
     active: props.active ?? true,
     rules: props.rules ?? [],
@@ -51,4 +51,4 @@ export default defineComponent(props => {
       return rule
     },
   }
-}, 'timer')
+}, 'Timer')

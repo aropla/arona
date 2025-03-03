@@ -1,9 +1,5 @@
-import Profile from '@arona/components/Profile'
 import avatar from './avatar.jpg'
-import ID from '@arona/components/ID'
-import Ref from '@arona/components/Ref'
-import Position from '@arona/components/Position'
-import MiracleRef from '@arona/components/MiracleRef'
+import { MiracleID, MiracleNodeID, Profile, MiracleRef, MiracleNodeRef, Position } from '@arona/components'
 
 export const travler = {
   uid: '10005950',
@@ -16,26 +12,26 @@ export const travler = {
 
 export const miracles = [
   {
-    [ID]: '1',
+    [MiracleID]: '1',
     [Profile]: {
       name: 'Arona',
-      desc: 'A.r.o.n.a 阿洛娜',
+      desc: '阿洛娜',
     },
   },
   {
-    [ID]: '2',
+    [MiracleID]: '2',
     [Profile]: {
-      name: '3D art',
-      desc: '3D 相关',
+      name: '3D Art',
+      desc: 'What is render',
     },
   }
 ]
 
 export const miracleNodes = [
   {
-    [ID]: '1',
+    [MiracleNodeID]: '1',
     [MiracleRef]: '1',
-    [Ref]: '1',
+    [MiracleNodeRef]: '1',
     [Profile]: {
       name: 'Arona',
       desc: 'A.r.o.n.a 阿洛娜',
@@ -46,9 +42,9 @@ export const miracleNodes = [
     }
   },
   {
-    [ID]: '2',
+    [MiracleNodeID]: '2',
     [MiracleRef]: '1',
-    [Ref]: '1',
+    [MiracleNodeRef]: '1',
     [Profile]: {
       name: 'Miracle Editor',
       desc: 'Miracle 绘制编辑器',
@@ -59,9 +55,9 @@ export const miracleNodes = [
     }
   },
   {
-    [ID]: '3',
+    [MiracleNodeID]: '3',
     [MiracleRef]: '1',
-    [Ref]: '1',
+    [MiracleNodeRef]: '1',
     [Profile]: {
       name: 'Miracle 视图',
       desc: '',
@@ -72,9 +68,9 @@ export const miracleNodes = [
     }
   },
   {
-    [ID]: '100',
+    [MiracleNodeID]: '100',
     [MiracleRef]: '2',
-    [Ref]: '100',
+    [MiracleNodeRef]: '100',
     [Profile]: {
       name: 'Blender',
       desc: '',
@@ -85,9 +81,9 @@ export const miracleNodes = [
     },
   },
   {
-    [ID]: '101',
+    [MiracleNodeID]: '101',
     [MiracleRef]: '2',
-    [Ref]: '100',
+    [MiracleNodeRef]: '100',
     [Profile]: {
       name: '每日练习',
       desc: 'A.A.O',
@@ -98,139 +94,3 @@ export const miracleNodes = [
     },
   },
 ]
-
-export const miracleNodes2 = {
-  '1': {
-    children: [
-      {
-        [ID]: '1',
-        miracleRef: '1',
-        [Ref]: '1',
-        [Profile]: {
-          name: 'Miracle Editor',
-          desc: 'Miracle 绘制编辑器',
-        },
-        children: [
-          {
-            [ID]: '100',
-            miracleRef: '1',
-            [Ref]: '1',
-            [Profile]: {
-              name: 'Miracle 视图',
-              desc: '',
-            },
-            children: [
-              {
-                [ID]: '101',
-                miracleRef: '1',
-                [Ref]: '100',
-                [Profile]: {
-                  name: '滚动视图',
-                  desc: '',
-                },
-              },
-              {
-                [ID]: '102',
-                miracleRef: '1',
-                [Ref]: '100',
-                [Profile]: {
-                  name: '连接线',
-                  desc: '',
-                },
-              }
-            ]
-          },
-          {
-            [ID]: '2',
-            miracleRef: '1',
-            [Ref]: '1',
-            [Profile]: {
-              name: 'Miracle 创建',
-              desc: '',
-            },
-            children: [
-              {
-                [ID]: '3',
-                miracleRef: '1',
-                [Ref]: '2',
-                [Profile]: {
-                  name: 'Miracle 修改',
-                  desc: '',
-                },
-              },
-              {
-                [ID]: '8',
-                miracleRef: '1',
-                [Ref]: '3',
-                [Profile]: {
-                  name: 'Miracle 删除',
-                  desc: '',
-                },
-              },
-            ]
-          },
-          {
-            [ID]: '6',
-            miracleRef: '1',
-            [Ref]: '1',
-            [Profile]: {
-              name: 'Miracle 查找',
-              desc: '',
-            },
-          }
-        ]
-      },
-      {
-        [ID]: '4',
-        miracleRef: '1',
-        [Ref]: '1',
-        [Profile]: {
-          name: 'Anchor',
-          desc: '待办事项',
-        },
-        children: [
-          {
-            [ID]: '5',
-            miracleRef: '1',
-            [Ref]: '4',
-            [Profile]: {
-              name: 'Anchor 创建',
-              desc: '',
-            },
-          }
-        ]
-      },
-    ]
-  },
-  '2': {
-    children: [
-      {
-        [ID]: '7',
-        miracleRef: '2',
-        [Profile]: {
-          name: 'Blender',
-          desc: '',
-        },
-      },
-      {
-        [ID]: '8',
-        miracleRef: '2',
-        [Profile]: {
-          name: '建筑学',
-          desc: '',
-        },
-        children: [
-          {
-            [ID]: '9',
-            miracleRef: '2',
-            [Ref]: '8',
-            [Profile]: {
-              name: '建筑学入门',
-              desc: 'Building',
-            },
-          }
-        ]
-      }
-    ]
-  }
-}

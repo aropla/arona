@@ -1,15 +1,11 @@
 import { useRef, useCallback } from 'react'
 import classNames from 'classnames'
 
-import ID from '@arona/components/ID'
-import Ref from '@arona/components/Ref'
-import Position from '@arona/components/Position'
-import Temp from '@arona/components/Temp'
-import Profile from '@arona/components/Profile'
+import { MiracleNodeID, MiracleNodeRef, Position, Temp, Profile } from '@arona/components'
 
 export function MiracleNode({ miracleNode, editor, mapView, onSelect, onDragStart }) {
   const ref = useRef()
-  const isRoot = miracleNode[ID] === miracleNode[Ref]
+  const isRoot = miracleNode[MiracleNodeID] === miracleNode[MiracleNodeRef]
 
   const mouseDown = useRef({
     time: 0,
@@ -86,7 +82,7 @@ export function MiracleNode({ miracleNode, editor, mapView, onSelect, onDragStar
   return (
     <div
       ref={ref}
-      id={`miracleNode.${miracleNode[ID]}`}
+      id={`miracleNode.${miracleNode[MiracleNodeID]}`}
       className={classNames("miracle-node flex rounded select-none absolute", "")}
       style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
       onMouseDown={handleMouseDown}
@@ -106,16 +102,16 @@ export function MiracleNode({ miracleNode, editor, mapView, onSelect, onDragStar
         <div className="vec2 absolute text-3 flex bottom-0.5 left-0.5 color-gray">
           <div className="x">({miracleNode[Position].x}, </div>
           <div className="y">{miracleNode[Position].y})</div>
-          <div className="id">id: {miracleNode[ID]}</div>
+          <div className="id">id: {miracleNode[MiracleNodeID]}</div>
         </div>
       </div>
     </div >
   )
 }
 
-export function toMiracleNodeRenderCoord(miracle, editor, zoom = 1) {
+export function toMiracleNodeRenderCoord(miracle, editor) {
   return {
-    x: (miracle[Position].x - editor.miracleWidth / 2) / 1,
-    y: (miracle[Position].y - editor.miracleHeight / 2) / 1,
+    x: miracle[Position].x - editor.miracleWidth / 2,
+    y: miracle[Position].y - editor.miracleHeight / 2,
   }
 }
