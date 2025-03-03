@@ -6,6 +6,7 @@ import { SystemManager } from './System'
 import { Bus } from './fairy'
 import { PluginManager } from './Plugin'
 import { Upgrader } from './Upgrader'
+import { isFunction } from './utils'
 
 export const componentRegistry = ComponentRegistry()
 
@@ -69,8 +70,11 @@ export function Seele() {
     createComponent(component) {
       return componentManager.get(component)
     },
-    createEntity(entity, count) {
-      return entityManager.createEntity(entity, count)
+    createEntity(archetypeBuilder, entity, count) {
+      return entityManager.createEntity(archetypeBuilder, entity, count)
+    },
+    pureCreateEntity(archetypeBuilder, entity, count) {
+      return entityManager.pureCreateEntity(archetypeBuilder, entity, count)
     },
     removeEntity(entity) {
       return entityManager.removeEntity(entity)
@@ -78,7 +82,7 @@ export function Seele() {
     query(queryBuilderOrQueryCreator) {
       let queryBuilder = queryBuilderOrQueryCreator
 
-      if (typeof queryBuilderOrQueryCreator === 'function') {
+      if (isFunction(queryBuilderOrQueryCreator)) {
         const queryCreator = queryBuilderOrQueryCreator
         queryBuilder = defineQuery(queryCreator)
       }

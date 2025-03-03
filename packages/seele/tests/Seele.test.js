@@ -181,6 +181,7 @@ describe('Seele', () => {
 
   /* registerComponent */
   seele
+    .vollerei()
     .registerComponent(Position)
     .registerComponent(WalkVector)
     .registerComponent(SwimVector)
@@ -350,7 +351,7 @@ describe('Seele', () => {
       .registerSystem(FlySystem)
 
     const flyPetsQuery = defineQuery(q => q.every(Position, FlyVector, Pet))
-    seele.createEntity(Bird, 2)
+    seele.createEntity(Bird, null, 2)
     const flyPets = seele.query(flyPetsQuery)
 
     it('birds move', () => {
@@ -385,5 +386,37 @@ describe('Seele', () => {
         expect(animal.size()).toBe(0)
       })
     })
+  })
+})
+
+describe('Seele Pure', () => {
+  const seele = Seele()
+
+  const Position = defineComponent(() => ({ x: 0, y: 0 }), 'position')
+
+  const Cat = defineEntity(entity => {
+    entity.addComponent(Position)
+      .name('cat')
+  })
+
+  seele
+    .vollerei()
+    .registerComponent(Position)
+    .registerEntity(Cat)
+    .ready()
+
+  const catQuery = seele.query(defineQuery(q => q.entity(Cat)))
+
+  seele.createEntity(Cat, null, 3)
+
+  it('cat in seele', () => {
+    expect(catQuery.size()).toBe(3)
+  })
+
+  const strayCats = seele.pureCreateEntity(Cat, null, 2)
+
+  it('cat in seele', () => {
+    expect(catQuery.size()).toBe(3)
+    expect(strayCats.length).toBe(2)
   })
 })

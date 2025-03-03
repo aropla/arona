@@ -1,4 +1,4 @@
-import { BitSet } from "./utils"
+import { BitSet, isFunction, isNotNullObject } from './utils'
 
 export function EntityManager(componentManager, bus) {
   const archetypeMap = new Map()
@@ -44,16 +44,43 @@ export function EntityManager(componentManager, bus) {
      * 1. Get Archetype
      * 2. Create Entity
      */
-    createEntity(archetypeBuilder, count = 1) {
+    createEntity(archetypeBuilder, entity, count = 1) {
       const archetype = register(archetypeBuilder)
 
-      if (count === 1) {
-        return archetype.create()
+      if (isNotNullObject(entity)) {
+        entity = defaultOnCreateProps(entity)
       }
 
-      for (let i = 0; i < count; i++) {
-        archetype.create()
+      if (count === 1) {
+        return archetype.create(entity)
       }
+
+      const entities = []
+
+      for (let i = 0; i < count; i++) {
+        entities.push(archetype.create(entity))
+      }
+
+      return entities
+    },
+    pureCreateEntity(archetypeBuilder, entity, count = 1) {
+      const archetype = register(archetypeBuilder)
+
+      if (isNotNullObject(entity)) {
+        entity = defaultOnCreateProps(entity)
+      }
+
+      if (count === 1) {
+        return archetype.pureCreate(entity)
+      }
+
+      const entities = []
+
+      for (let i = 0; i < count; i++) {
+        entities.push(archetype.pureCreate(entity))
+      }
+
+      return entities
     },
     removeEntity(entity) {
       const archetype = find(entity)
@@ -72,6 +99,28 @@ export function EntityManager(componentManager, bus) {
         cb(archetypes[i])
       }
     },
+    hydrate(dehydration, patcher) {
+      const components = dehydration.components
+      const name = dehydration.name
+      const entities = dehydration.entities
+
+      let archetype = name === '' ? null : nameToArchetypeMap.get(name)
+
+      if (!archetype) {
+        const archetypeBuilder = ArchetypeBuilder()
+
+        for (let i = 0; i < components.length; i++) {
+          const oldComponent = components[i]
+          const component = patcher.getNew(oldComponent) ?? oldComponent
+
+          archetypeBuilder.addComponent(component)
+        }
+
+        archetype = register(archetypeBuilder)
+      }
+
+      archetype.hydrate(entities, patcher)
+    },
     dehydrate() {
       const result = []
 
@@ -84,28 +133,6 @@ export function EntityManager(componentManager, bus) {
       })
 
       return result
-    },
-    hydrate(dehydration, patcher) {
-      const idValues = dehydration.id
-      const name = dehydration.name
-      const entities = dehydration.entities
-
-      let archetype = nameToArchetypeMap.get(name)
-
-      if (!archetype) {
-        const archetypeBuilder = ArchetypeBuilder()
-
-        for (let i = 0; i < idValues.length; i++) {
-          const oldID = idValues[i]
-          const id = patcher.getNew(oldID) ?? oldID
-
-          archetypeBuilder.addComponent(id)
-        }
-
-        archetype = register(archetypeBuilder)
-      }
-
-      archetype.hydrate(entities, patcher)
     },
   }
 
@@ -135,7 +162,7 @@ export function EntityManager(componentManager, bus) {
 
       for (let i = 0; i < components.length; i++) {
         const component = components[i]
-        const props = (onCreateProps !== undefined ? onCreateProps(propsMap[component], component) : propsMap[component]) ?? {}
+        const props = isFunction(onCreateProps) ? onCreateProps(propsMap[component], component) : propsMap[component]
 
         instance[component] = creators[i](props)
       }
@@ -153,6 +180,8 @@ export function Archetype(archetypeBuilder, creator, register, componentManager,
   const adjacent = new Map()
 
   let self = null
+
+  const components = archetypeBuilder.values()
   const name = archetypeBuilder.getName()
 
   return {
@@ -162,6 +191,9 @@ export function Archetype(archetypeBuilder, creator, register, componentManager,
       return archetypeBuilder.mask
     },
     create,
+    pureCreate(onCreateProps) {
+      return creator(onCreateProps)
+    },
     add,
     remove,
     has(entity) {
@@ -224,15 +256,6 @@ export function Archetype(archetypeBuilder, creator, register, componentManager,
     setThis(instance) {
       self = instance
     },
-    dehydrate() {
-      const id = archetypeBuilder.values()
-
-      return {
-        id,
-        name,
-        entities,
-      }
-    },
     hydrate(dehydration, patcher) {
       for (let i = 0; i < dehydration.length; i++) {
         const oldEntity = dehydration[i]
@@ -241,12 +264,19 @@ export function Archetype(archetypeBuilder, creator, register, componentManager,
           const oldComponent = patcher.getOld(component) ?? component
           const newProps = oldEntity[oldComponent]
 
-          if (typeof props === 'object' && typeof newProps === 'object') {
+          if (isNotNullObject(props) && isNotNullObject(newProps)) {
             return { ...props, ...newProps }
           }
 
-          return newProps ?? {}
+          return newProps
         })
+      }
+    },
+    dehydrate() {
+      return {
+        components,
+        name,
+        entities,
       }
     },
   }
@@ -263,12 +293,6 @@ export function Archetype(archetypeBuilder, creator, register, componentManager,
     return archetypeBuilder.hasComponent(component)
   }
 
-  /**
-   *
-   * @param {*} entity
-   * @param {*} newArchetype
-   * @returns
-   */
   function add(entity) {
     entities.push(entity)
     entityPositionMap.set(entity, entities.length - 1)
@@ -370,4 +394,16 @@ export function ArchetypeBuilder() {
 
 function isValidArchetypeName(value) {
   return typeof value === 'string' && value !== ''
+}
+
+function defaultOnCreateProps(entity) {
+  return (props, component) => {
+    const newProps = entity[component]
+
+    if (typeof props === 'object' && typeof newProps === 'object') {
+      return { ...props, ...newProps }
+    }
+
+    return newProps ?? props
+  }
 }

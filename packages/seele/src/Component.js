@@ -1,4 +1,4 @@
-import { IDGenerator } from "./utils"
+import { IDGenerator, isFunction } from './utils'
 
 export function ComponentManager(componentRegistry, bus) {
   const creatorMap = new Map()
@@ -15,7 +15,7 @@ export function ComponentManager(componentRegistry, bus) {
     },
     create,
     addComponent(entity, component, props, archetype, newArchetype) {
-      entity[component] = create(component, props ?? {})
+      entity[component] = create(component, props)
 
       bus.emit('component:added', { archetype, newArchetype, entity, component })
     },
@@ -59,7 +59,7 @@ export function ComponentManager(componentRegistry, bus) {
 }
 
 export function ComponentRegistry(idGen) {
-  idGen = (idGen && typeof idGen.gen === 'function') ? idGen : IDGenerator()
+  idGen = (idGen && isFunction(idGen)) ? idGen : IDGenerator()
   const idMap = new Map() // id -> name
   const nameMap = new Map() // name -> id
   const creatorMap = new Map() // id -> creator
