@@ -1,4 +1,4 @@
-import { BitSet, isFunction, isNotNullObject } from './utils'
+import { BitSet, isFunction, isNotNullObject, isNull } from './utils'
 
 export function EntityManager(componentManager, bus) {
   const archetypeMap = new Map()
@@ -47,8 +47,8 @@ export function EntityManager(componentManager, bus) {
     createEntity(archetypeBuilder, entity, count = 1) {
       const archetype = register(archetypeBuilder)
 
-      if (isNotNullObject(entity)) {
-        entity = defaultOnCreateProps(entity)
+      if (isNull(entity)) {
+        entity = Object.create(null)
       }
 
       if (count === 1) {
@@ -63,21 +63,21 @@ export function EntityManager(componentManager, bus) {
 
       return entities
     },
-    pureCreateEntity(archetypeBuilder, entity, count = 1) {
+    createEntityPure(archetypeBuilder, entity, count = 1) {
       const archetype = register(archetypeBuilder)
 
-      if (isNotNullObject(entity)) {
-        entity = defaultOnCreateProps(entity)
+      if (isNull(entity)) {
+        entity = Object.create(null)
       }
 
       if (count === 1) {
-        return archetype.pureCreate(entity)
+        return archetype.createPure(entity)
       }
 
       const entities = []
 
       for (let i = 0; i < count; i++) {
-        entities.push(archetype.pureCreate(entity))
+        entities.push(archetype.createPure(entity))
       }
 
       return entities
@@ -129,7 +129,13 @@ export function EntityManager(componentManager, bus) {
           return
         }
 
-        result.push(archetype.dehydrate())
+        const dehydration = archetype.dehydrate()
+
+        if (!dehydration) {
+          return
+        }
+
+        result.push(dehydration)
       })
 
       return result
@@ -157,12 +163,25 @@ export function EntityManager(componentManager, bus) {
     const components = mask.values()
     const creators = components.map(componentManager.get)
 
-    const creator = onCreateProps => {
+    const creator = (entityOrHook = Object.create(null)) => {
       const instance = Object.create(null)
+
+      const propsGetter = isFunction(entityOrHook) ? entityOrHook : (props, component) => {
+        const newProps = entityOrHook[component]
+
+        if (isNotNullObject(newProps) && isNotNullObject(props)) {
+          return {
+            ...props,
+            ...newProps,
+          }
+        }
+
+        return newProps ?? props
+      }
 
       for (let i = 0; i < components.length; i++) {
         const component = components[i]
-        const props = isFunction(onCreateProps) ? onCreateProps(propsMap[component], component) : propsMap[component]
+        const props = propsGetter(propsMap[component], component)
 
         instance[component] = creators[i](props)
       }
@@ -182,17 +201,17 @@ export function Archetype(archetypeBuilder, creator, register, componentManager,
   let self = null
 
   const components = archetypeBuilder.values()
-  const name = archetypeBuilder.getName()
+  const options = archetypeBuilder.getOptions()
 
   return {
-    name,
+    name: options.name,
     entities,
     get mask() {
       return archetypeBuilder.mask
     },
     create,
-    pureCreate(onCreateProps) {
-      return creator(onCreateProps)
+    createPure(entityOrHook) {
+      return creator(entityOrHook)
     },
     add,
     remove,
@@ -253,9 +272,6 @@ export function Archetype(archetypeBuilder, creator, register, componentManager,
       newArchetype.add(entity)
     },
     addAdjacent,
-    setThis(instance) {
-      self = instance
-    },
     hydrate(dehydration, patcher) {
       for (let i = 0; i < dehydration.length; i++) {
         const oldEntity = dehydration[i]
@@ -273,16 +289,25 @@ export function Archetype(archetypeBuilder, creator, register, componentManager,
       }
     },
     dehydrate() {
+      const { name, skipDehyadrate } = options
+
+      if (skipDehyadrate) {
+        return
+      }
+
       return {
         components,
         name,
         entities,
       }
     },
+    setThis(instance) {
+      self = instance
+    },
   }
 
-  function create(onCreateProps) {
-    const entity = creator(onCreateProps)
+  function create(entityOrHook) {
+    const entity = creator(entityOrHook)
 
     bus.emit('entity:created', { archetype: self, entity })
 
@@ -325,14 +350,15 @@ export function Archetype(archetypeBuilder, creator, register, componentManager,
 
 export function ArchetypeBuilder() {
   const options = {
-    name: ''
+    name: '',
+    skipDehyadrate: false,
   }
   let mask = BitSet(8)
   let propsMap = Object.create(null)
 
   return {
-    getName() {
-      return options.name
+    getOptions() {
+      return options
     },
     name(value) {
       if (!isValidArchetypeName(value)) {
@@ -342,6 +368,11 @@ export function ArchetypeBuilder() {
       }
 
       options.name = value
+
+      return this
+    },
+    skipDehyadrate() {
+      options.skipDehyadrate = true
 
       return this
     },
@@ -394,16 +425,4 @@ export function ArchetypeBuilder() {
 
 function isValidArchetypeName(value) {
   return typeof value === 'string' && value !== ''
-}
-
-function defaultOnCreateProps(entity) {
-  return (props, component) => {
-    const newProps = entity[component]
-
-    if (typeof props === 'object' && typeof newProps === 'object') {
-      return { ...props, ...newProps }
-    }
-
-    return newProps ?? props
-  }
 }

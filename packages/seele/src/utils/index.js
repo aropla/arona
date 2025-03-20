@@ -10,3 +10,7 @@ export function isFunction(obj) {
 export function isNotNullObject(obj) {
   return obj !== null && typeof obj === 'object'
 }
+
+export function isNull(obj) {
+  return obj === null
+}

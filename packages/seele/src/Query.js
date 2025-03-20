@@ -43,6 +43,7 @@ export function QueryManager(bus) {
 export function Query(queryBuilder, bus) {
   const archetypes = []
   const matcher = queryBuilder.build()
+  const options = queryBuilder.options
   const queryBus = Bus()
 
   return {
@@ -78,6 +79,22 @@ export function Query(queryBuilder, bus) {
     },
     hasArchetype,
     traverse,
+    find,
+    /**
+     * 只有 options.single = true 时才有意义
+     */
+    get() {
+      const len = archetypes.length
+      for (let i = len - 1; i >= 0; i--) {
+        const archetype = archetypes[i]
+        const size = archetype.size()
+        const entities = archetype.entities
+
+        for (let j = size - 1; j >= 0; j--) {
+          return entities[j]
+        }
+      }
+    },
     map(cb) {
       const result = []
 
@@ -87,15 +104,7 @@ export function Query(queryBuilder, bus) {
 
       return result
     },
-    array() {
-      const result = []
-
-      traverse(entity => {
-        result.push(entity)
-      })
-
-      return result
-    },
+    array,
     clear() {
       archetypes.length = 0
     },
@@ -148,6 +157,16 @@ export function Query(queryBuilder, bus) {
     },
   }
 
+  function array() {
+    const result = []
+
+    traverse(entity => {
+      result.push(entity)
+    })
+
+    return result
+  }
+
   function traverse(cb) {
     const len = archetypes.length
     for (let i = len - 1; i >= 0; i--) {
@@ -161,6 +180,21 @@ export function Query(queryBuilder, bus) {
     }
   }
 
+  function find(cb) {
+    const len = archetypes.length
+    for (let i = len - 1; i >= 0; i--) {
+      const archetype = archetypes[i]
+      const size = archetype.size()
+      const entities = archetype.entities
+
+      for (let j = size - 1; j >= 0; j--) {
+        if (cb(entities[j], archetype)) {
+          return entities[j]
+        }
+      }
+    }
+  }
+
   function hasArchetype(archetype) {
     return archetypes.indexOf(archetype) !== -1
   }
@@ -168,8 +202,12 @@ export function Query(queryBuilder, bus) {
 
 export function QueryBuilder() {
   let matchers = []
+  const options = {
+    single: false,
+  }
 
   return {
+    options,
     matchers,
     or(cb) {
       const [first = alwaysTrue, ...rest] = matchers
@@ -265,6 +303,12 @@ export function QueryBuilder() {
 
       return AndMatcher(first, rest)
     },
+
+    single() {
+      options.single = true
+
+      return this
+    }
   }
 }
 

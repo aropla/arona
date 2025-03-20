@@ -413,7 +413,7 @@ describe('Seele Pure', () => {
     expect(catQuery.size()).toBe(3)
   })
 
-  const strayCats = seele.pureCreateEntity(Cat, null, 2)
+  const strayCats = seele.createEntityPure(Cat, null, 2)
 
   it('cat in seele', () => {
     expect(catQuery.size()).toBe(3)

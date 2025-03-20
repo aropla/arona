@@ -73,8 +73,8 @@ export function Seele() {
     createEntity(archetypeBuilder, entity, count) {
       return entityManager.createEntity(archetypeBuilder, entity, count)
     },
-    pureCreateEntity(archetypeBuilder, entity, count) {
-      return entityManager.pureCreateEntity(archetypeBuilder, entity, count)
+    createEntityPure(archetypeBuilder, entity, count) {
+      return entityManager.createEntityPure(archetypeBuilder, entity, count)
     },
     removeEntity(entity) {
       return entityManager.removeEntity(entity)
