@@ -1,10 +1,11 @@
 import { createBrowserRouter, Navigate } from 'react-router'
 import App from '../App'
-import Arona from '../pages/arona/Arona/Arona'
-import Miracles from '../pages/arona/Miracles/Miracles'
-import Memos from '../pages/arona/Memos/Memos'
-import TickTock from '../pages/arona/TickTock/TickTock'
-import Toki from '../pages/toki/Toki/Toki'
+import Arona from '@pages/arona/Arona/Arona'
+import Miracles from '@pages/arona/Miracles/Miracles'
+import Memos from '@pages/arona/Memos/Memos'
+import TickTock from '@pages/arona/TickTock/TickTock'
+import { MiracleCreatorStage } from '@pages/arona/Miracles/MiracleCreatorStage/MiracleCreatorStage'
+import { MiracleEditorStage } from '@pages/arona/Miracles/MiracleEditorStage/MiracleEditorStage'
 
 export const Locations = {
   Root: '/',
@@ -13,7 +14,10 @@ export const Locations = {
   AronaMiracles: '/arona/miracles',
   AronaMemos: '/arona/memos',
   AronaTickTock: '/arona/tick-tock',
-  Toki: '/arona/toki',
+  AronaMiracleCreator: '/arona/miracles/create',
+  AronaMiracleEditor(id = ':id') {
+    return `/arona/miracles/${id}/edit`
+  },
 }
 
 export const router = createBrowserRouter([
@@ -32,6 +36,16 @@ export const router = createBrowserRouter([
       {
         path: Locations.AronaMiracles,
         element: <Miracles />,
+        children: [
+          {
+            path: Locations.AronaMiracleEditor(),
+            element: <MiracleEditorStage />,
+          },
+          {
+            path: Locations.AronaMiracleCreator,
+            element: <MiracleCreatorStage />,
+          },
+        ]
       },
       {
         path: Locations.AronaMemos,
@@ -41,10 +55,6 @@ export const router = createBrowserRouter([
         path: Locations.AronaTickTock,
         element: <TickTock />,
       },
-      {
-        path: Locations.Toki,
-        element: <Toki />,
-      }
     ]
   },
 ])

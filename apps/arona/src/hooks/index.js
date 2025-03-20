@@ -1,6 +1,6 @@
-import { useRef } from "react"
-import { useCallback } from "react"
-import { useEffect } from "react"
+import { useEffect, useCallback, useRef } from 'react'
+import gsap from 'gsap'
+import { Noop, AndExecutor } from '@utils'
 
 const mouse = {
   x: 0,
@@ -68,4 +68,127 @@ export function useMouseRegistry() {
   }, [])
 
   return [mouse]
+}
+
+export function useStopPropagation() {
+  const handleStopPropagation = useCallback(event => {
+    event.stopPropagation()
+  }, [])
+
+  return handleStopPropagation
+}
+
+export function useFadeAnimation(ref, gsapOptions = {}, options = {}) {
+  const animationRef = useRef()
+
+  useEffect(() => {
+    if (!animationRef.current) {
+      animationRef.current = gsap.to(ref.current, {
+        paused: true,
+        ease: 'power1.inOut',
+        ...gsapOptions,
+      })
+    }
+  }, [])
+
+  useEffect(() => {
+    if (options.observe == null) {
+      return
+    }
+
+    options.observe() ? animationRef.current.play() : animationRef.current.reverse()
+  }, [options.observe])
+
+  return {
+    play() {
+      animationRef.current.play()
+    },
+    reverse() {
+      animationRef.current.reverse()
+    },
+    kill() {
+      animationRef.current.kill()
+    },
+    setGsapOptions(gsapOptions) {
+      animationRef.current = gsap.to(ref.current, {
+        paused: true,
+        ...gsapOptions,
+      })
+    },
+  }
+}
+
+const supports = {
+  ResizeObserver: typeof ResizeObserver === 'function',
+}
+
+export function useResize(ref, onResize, enabled = true) {
+  const handleResize = useCallback(() => {
+    onResize()
+  }, [onResize])
+
+  useEffect(() => {
+    if (!enabled) {
+      return
+    }
+
+    if (supports.ResizeObserver) {
+      const resizeObserver = new ResizeObserver(handleResize)
+      resizeObserver.observe(ref.current)
+
+      return () => resizeObserver.disconnect()
+    } else {
+      window.addEventListener('resize', handleResize)
+
+      return () => window.removeEventListener('resize', handleResize)
+    }
+  }, [onResize, enabled])
+}
+
+export function useWheel(ref, options = {}) {
+  const { onInit = Noop, onWheel = Noop, onWheelStart = Noop, onWheelEnd = Noop, endThreshold = 100 } = options
+  let timer = useRef()
+  let wheeling = useRef(false)
+
+  const handleWheel = useCallback(event => {
+    event.preventDefault()
+
+    if (!wheeling.current) {
+      onWheelStart(event)
+    }
+
+    wheeling.current = true
+    onWheel(event)
+
+    if (timer.current) {
+      clearTimeout(timer.current)
+    }
+
+    timer.current = setTimeout(() => {
+      wheeling.current = false
+      onWheelEnd(event)
+    }, endThreshold)
+  }, [onWheelStart, onWheel, onWheelEnd, endThreshold])
+
+  useEffect(() => {
+    const element = ref.current
+
+    if (!element) {
+      return
+    }
+
+    onInit(element)
+
+    element.addEventListener('wheel', handleWheel)
+
+    return () => {
+      element.removeEventListener('wheel', handleWheel)
+    }
+  }, [handleWheel])
+}
+
+export function useAndExecutor(cb) {
+  const executor = useRef(AndExecutor(cb))
+
+  return executor.current
 }

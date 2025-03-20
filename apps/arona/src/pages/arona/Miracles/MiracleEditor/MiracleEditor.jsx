@@ -1,12 +1,11 @@
-import './index.scss'
 import { useRef, useState, useCallback, useEffect } from 'react'
 import classNames from 'classnames'
 import { useKey } from 'react-use'
 
 import { useMouseEvent } from '@hooks'
 
-import arona from '@arona'
-import { MiracleNodeID, MiracleID, Profile, Position, Renderer, MiracleNodeRef, Vec3, Temp, MiracleRef, Noa } from '@arona/components'
+import { arona } from '@arona'
+import { MiracleNodeID, MiracleID, Profile, Position, Renderer, MiracleNodeRef, Velocity, Temp, MiracleRef, Noa } from '@arona/components'
 import { MiracleNode } from '@arona/entities'
 
 import { MiracleNodesQuery } from '@arona/queries'
@@ -14,11 +13,12 @@ import { MiracleNodesQuery } from '@arona/queries'
 import { AronaForm, AronaFormItem, AronaInput } from '@/components/AronaInteraction/AronaInteraction'
 import { useAronaForm } from '@/components/AronaInteraction/controller'
 import AronaMapView, { useAronaMapView } from '@/components/AronaView/AronaMapView/AronaMapView'
-import { MiracleEditorBackground } from './MiracleEditorBackground'
-import { MiracleNode as TheMiracleNode, toMiracleNodeRenderCoord } from './MiracleNode'
+import { MiracleEditorBackground } from './components/MiracleEditorBackground'
+import { MiracleNode as TheMiracleNode, toMiracleNodeRenderCoord } from './components/MiracleNode'
 import { useSeeleFrame, useSeeleQuery } from '@app/seele-react'
 import { AronaButton } from '@/components/AronaButton/AronaButton'
 import { AronaButtonGroup } from '@/components/AronaButton/AronaButtonGroup'
+import { useFadeAnimation } from '@hooks'
 
 const MiracleEditorOptions = {
   miracleWidth: 200,
@@ -30,11 +30,9 @@ const MiracleEditorOptions = {
   magnetY: 20,
 }
 
-export default function MiracleEditor({ miracle, editor = MiracleEditorOptions }) {
-  const miracleNodesQuery = useSeeleQuery(MiracleNodesQuery)
-
-  console.log('miracleNodesQuery', JSON.parse(JSON.stringify(miracleNodesQuery.array())), miracle)
-  const miracleNodes = miracle ? miracleNodesQuery.array().filter(entity => entity[MiracleRef] === miracle[MiracleID]) : []
+export function MiracleEditor({ miracle, editor = MiracleEditorOptions }) {
+  const [allMiracleNodes] = useSeeleQuery(MiracleNodesQuery)
+  const miracleNodes = miracle ? allMiracleNodes.filter(entity => entity[MiracleRef] === miracle[MiracleID]) : []
   const rootNode = miracleNodes.find(node => node[MiracleNodeID] === node[MiracleNodeRef]) ?? null
 
   const mapView = useAronaMapView()
@@ -354,16 +352,16 @@ export default function MiracleEditor({ miracle, editor = MiracleEditorOptions }
     const camera = mapView.camera
 
     if (keyboard.current.w) {
-      camera[Vec3].y -= 0.01 * delta
+      camera[Velocity].y -= 0.01 * delta
     }
     if (keyboard.current.s) {
-      camera[Vec3].y += 0.01 * delta
+      camera[Velocity].y += 0.01 * delta
     }
     if (keyboard.current.a) {
-      camera[Vec3].x -= 0.01 * delta
+      camera[Velocity].x -= 0.01 * delta
     }
     if (keyboard.current.d) {
-      camera[Vec3].x += 0.01 * delta
+      camera[Velocity].x += 0.01 * delta
     }
   })
 
@@ -402,10 +400,13 @@ export default function MiracleEditor({ miracle, editor = MiracleEditorOptions }
         onRemove={handleMiracleNodeRemove}
       />
 
+      <MiracleEditorTopBar
+        mapView={mapView}
+      />
+
       <MiracleEditorBottomBar
         miracle={miracle}
         miracleNode={selectedMiracleNode}
-        mapView={mapView}
         onCreate={handleMiracleNodeCreate}
         onRemove={handleMiracleNodeRemove}
         onRefocus={handleMiracleNodeRefocus}
@@ -414,7 +415,7 @@ export default function MiracleEditor({ miracle, editor = MiracleEditorOptions }
   )
 }
 
-function MiracleEditorBottomBar({ miracleNode, mapView, onCreate, onRemove, onRefocus }) {
+function MiracleEditorTopBar({ mapView }) {
   const camera = mapView.camera
 
   const [debug, rerender] = useState()
@@ -427,13 +428,28 @@ function MiracleEditorBottomBar({ miracleNode, mapView, onCreate, onRemove, onRe
     return () => clearInterval(timer)
   }, [debug])
 
-  const handleMiracleNodeCreate = useCallback(() => {
-    onCreate()
-  }, [onCreate])
 
+  return (
+    <div className="position-tip absolute top-0 left-0 py-2 px-4">
+      <div className="position  text-3 flex">
+        <div className="name text-gray-500 mr-1">position:</div>
+        <div className="value flex text-gray-500">
+          <div className="x">({camera[Position].x},</div>
+          <div className="y">{camera[Position].y})</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function MiracleEditorBottomBar({ miracleNode, onCreate, onRemove, onRefocus }) {
   const handleStopPropagation = useCallback(event => {
     event.stopPropagation()
   }, [])
+
+  const handleMiracleNodeCreate = useCallback(() => {
+    onCreate()
+  }, [onCreate])
 
   const handleMiracleNodeRemove = useCallback(() => {
     onRemove(miracleNode.value)
@@ -460,15 +476,7 @@ function MiracleEditorBottomBar({ miracleNode, mapView, onCreate, onRemove, onRe
       className="miracle-editor-bottom-bar absolute bottom-0 left-0 right-0 h-8 px-2 rounded flex items-center"
       onMouseUp={handleStopPropagation}
     >
-      <div className="position text-3 flex">
-        <div className="name text-gray-500 mr-1">position:</div>
-        <div className="value flex text-gray-500">
-          <div className="x">({camera[Position].x},</div>
-          <div className="y">{camera[Position].y})</div>
-        </div>
-      </div>
-
-      <AronaButtonGroup className="absolute left-4 bottom-8">
+      <AronaButtonGroup className="absolute left-4 bottom-4">
         <AronaButton onClick={handleMiracleNodeCreate}>+</AronaButton>
         <AronaButton onClick={handleMiracleNodeRemove} enabled={miracleNode.value}>-</AronaButton>
         <AronaButton onClick={onRefocus}>origin</AronaButton>
@@ -499,16 +507,28 @@ function MiracleEditorSidePanel({ miracleNode, sidePanelShow, onSave, onRemove }
     event.stopPropagation()
   }, [])
 
+  const ref = useRef()
+
+  useFadeAnimation(ref, {
+    duration: 0.4,
+    x: 0,
+    opacity: 1,
+    display: 'block',
+    startAt: {
+      x: 32,
+      opacity: 0,
+    },
+  }, {
+    observe: () => sidePanelShow,
+  })
+
   return (
     <div
-      className={classNames(
-        "miracle-editor-sidebar absolute w-100 right-0 bg-white/20 inset-y-0 rounded p-4 m-4 hidden",
-        { 'fade-in': sidePanelShow },
-        { 'fade-out': !sidePanelShow },
-      )}
+      className={"miracle-editor-sidebar absolute w-100 right-0 bg-white/20 inset-y-0 rounded p-4 m-4 hidden"}
       onMouseUp={handleStopPropagation}
       onKeyDown={handleStopPropagation}
       onKeyUp={handleStopPropagation}
+      ref={ref}
     >
       <div className="title-bar h-10">
         <div className="title">编辑 MiracleNode</div>

@@ -1,10 +1,8 @@
 import { defineSystem } from 'seele'
 import { Renderer } from '@arona/components'
 
-export default defineSystem(seele => {
+export const RenderSystem = defineSystem(seele => {
   const query = seele.query(q => q.every(Renderer))
-
-  console.log('renderer', query)
 
   return {
     onRender(interp) {

@@ -1,14 +1,17 @@
-import avatar from './avatar.jpg'
-import { MiracleID, MiracleNodeID, Profile, MiracleRef, MiracleNodeRef, Position } from '@arona/components'
+import { Mine, TravelerID, Selfie, MiracleID, MiracleNodeID, Profile, MiracleRef, MiracleNodeRef, Position } from '@arona/components'
 
-export const travler = {
-  uid: '10005950',
-  info: {
-    name: '彩りん',
-    desc: '请与我一同, 回归海的怀抱',
+export const travelers = [
+  {
+    [TravelerID]: '10005950',
+    [Profile]: {
+      name: '彩りん',
+      desc: '请与我一同, 回归海的怀抱',
+    },
+    [Selfie]: {
+      url: '/default-traveler-selfie.jpg'
+    },
   },
-  avatar,
-}
+]
 
 export const miracles = [
   {

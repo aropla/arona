@@ -7,5 +7,6 @@
     "seele": "pnpm -F \"seele\""
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "packageManager": "pnpm@8.10.5+sha1.4370a069f21873a0ad83c785b8048ed8caf6e6e9"
 }

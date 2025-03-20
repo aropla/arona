@@ -1,5 +1,5 @@
 import { defineEntity } from 'seele'
-import { Profile, Physical, Vec3, Position } from '@arona/components'
+import { Profile, Physical, Velocity, Position } from '@arona/components'
 
 export const Camera = defineEntity(entity => {
   entity
@@ -8,12 +8,13 @@ export const Camera = defineEntity(entity => {
       name: 'Camera',
     })
     .addComponent(Physical, {
-      friction: 0.86,
+      friction: 0.6,
     })
-    .addComponent(Vec3, {
+    .addComponent(Velocity, {
       x: 0,
       y: 0,
       z: 1,
     })
     .addComponent(Position)
+    .skipDehyadrate()
 })

@@ -1,5 +1,7 @@
 import { createContext } from 'react'
 import { useRef } from 'react'
+import { useCallback } from 'react'
+import { useMemo } from 'react'
 import { useState } from 'react'
 import { useContext } from 'react'
 import { useEffect } from 'react'
@@ -33,19 +35,21 @@ export function useSeeleFrame(cb, deps = []) {
 
 
 function useRenderer() {
-  const [_, render] = useState(Date.now())
+  const [dep, render] = useState(Date.now())
 
-  return () => {
+  const rerender = useCallback(() => {
     render(Date.now())
-  }
+  }, [])
+
+  return [dep, rerender]
 }
 
 const SeeleContext = createContext()
 
-export function useSeeleQuery(queryBuilder, options = {}) {
+export function useSeeleQuery(queryBuilder) {
   const seele = useContext(SeeleContext)
   const query = useRef()
-  const render = useRenderer()
+  const [dep, render] = useRenderer()
 
   if (query.current === undefined) {
     query.current = seele.query(queryBuilder)
@@ -59,7 +63,9 @@ export function useSeeleQuery(queryBuilder, options = {}) {
     }
   }, [])
 
-  return query.current
+  const list = query.current.array()
+
+  return [list, query.current]
 }
 
 export function SeeleProvider({ children, seele }) {

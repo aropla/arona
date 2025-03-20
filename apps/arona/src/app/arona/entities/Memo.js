@@ -1,5 +1,5 @@
 import { defineEntity } from 'seele'
-import { MemoID, Profile, Noa, CreatedAt, Status } from '@arona/components'
+import { MiracleNodeRef, OwnerRef, MemoID, Profile, Noa, CreatedTime, Status } from '@arona/components'
 
 export const MEMO_STATUS = {
   PENDING: 1,
@@ -12,12 +12,14 @@ export const Memo = defineEntity(entity => {
   entity
     .name('Memo')
     .addComponent(MemoID)
+    .addComponent(OwnerRef)
+    .addComponent(MiracleNodeRef) /* #debug */
     .addComponent(Profile, {
-      name: 'Memo',
-      desc: '',
+      name: '来自未来的记忆',
+      desc: '[memo]',
     })
+    .addComponent(CreatedTime)
     .addComponent(Noa)
-    .addComponent(CreatedAt)
     .addComponent(Status, {
       status: MEMO_STATUS.PENDING,
     })

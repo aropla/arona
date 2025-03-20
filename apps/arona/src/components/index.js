@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useRef } from 'react'
 
 export function defineController(controllerCtor) {
@@ -99,7 +100,11 @@ export function buildController(controller, onCreated) {
       instance.current = controller(...args)
     }
 
-    onCreated && onCreated(instance.current)
+    useEffect(() => {
+      return () => instance.current.cleanup?.()
+    }, [])
+
+    onCreated && onCreated(instance.current, ...args)
 
     return instance.current
   }

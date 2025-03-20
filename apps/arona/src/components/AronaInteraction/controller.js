@@ -1,6 +1,6 @@
 import { defineControllerWithName, buildController } from '@/components'
 
-const aronaFormController = defineControllerWithName(({ render, traverse, subscribe }, defaultData = {}, options) => {
+const aronaFormController = defineControllerWithName(({ render, renderAll, traverse, subscribe }, defaultData = {}, options) => {
   let data = {
     ...defaultData,
   }
@@ -23,7 +23,7 @@ const aronaFormController = defineControllerWithName(({ render, traverse, subscr
     clear() {
       data = Object.create(null)
 
-      render('')
+      renderAll('')
     },
     submit,
     validate,

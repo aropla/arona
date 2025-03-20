@@ -99,7 +99,7 @@ export function MiracleNode({ miracleNode, editor, mapView, onSelect, onDragStar
           <div className="desc text-3 text-white/50">{miracleNode[Profile].desc}</div>
         </div>
 
-        <div className="vec2 absolute text-3 flex bottom-0.5 left-0.5 color-gray">
+        <div className="position absolute text-3 flex bottom-0.5 left-0.5 color-gray">
           <div className="x">({miracleNode[Position].x}, </div>
           <div className="y">{miracleNode[Position].y})</div>
           <div className="id">id: {miracleNode[MiracleNodeID]}</div>

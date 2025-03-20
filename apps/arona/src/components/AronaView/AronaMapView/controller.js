@@ -3,13 +3,13 @@ import gsap from 'gsap'
 
 import { buildController } from '@/components'
 
-import arona from '@arona'
-import { Position, Vec3 } from '@arona/components'
+import { arona } from '@arona'
+import { Position, Velocity } from '@arona/components'
 import { Camera } from '@arona/entities'
 
-const aronaMapView = () => {
+function AronaMapView() {
   const camera = arona.createEntity(Camera)
-  let expectZoom = camera[Vec3].z
+  let expectZoom = camera[Velocity].z
 
   const viewport = {
     width: 0,
@@ -49,7 +49,7 @@ const aronaMapView = () => {
     },
     zoom(zoom, props = {}) {
       expectZoom = zoom
-      gsap.to(camera[Vec3], {
+      gsap.to(camera[Velocity], {
         z: zoom,
         duration: 0.5,
         ...props,
@@ -60,20 +60,20 @@ const aronaMapView = () => {
     },
     /**
      * 当使用 scale 来进行 zoom 时，使用该公式
-     * x: -(camera[Position].x - viewport.width / 2) * camera[Vec3].z,
-     * y: -(camera[Position].y - viewport.height / 2) * camera[Vec3].z,
+     * x: -(camera[Position].x - viewport.width / 2) * camera[Velocity].z,
+     * y: -(camera[Position].y - viewport.height / 2) * camera[Velocity].z,
      *
      * 当使用 zoom 时来进行 zoom 时，使用该公式
-     * x: -(camera[Position].x - viewport.width / 2 / camera[Vec3].z),
-     * y: -(camera[Position].y - viewport.height / 2 / camera[Vec3].z),
+     * x: -(camera[Position].x - viewport.width / 2 / camera[Velocity].z),
+     * y: -(camera[Position].y - viewport.height / 2 / camera[Velocity].z),
      *
      * @returns
      */
     getVision() {
       return {
-        x: -(camera[Position].x - viewport.width / 2 / camera[Vec3].z),
-        y: -(camera[Position].y - viewport.height / 2 / camera[Vec3].z),
-        z: camera[Vec3].z,
+        x: -(camera[Position].x - viewport.width / 2 / camera[Velocity].z),
+        y: -(camera[Position].y - viewport.height / 2 / camera[Velocity].z),
+        z: camera[Velocity].z,
       }
     },
     screenToMapView(position) {
@@ -88,16 +88,10 @@ const aronaMapView = () => {
         y: position.y - viewport.height / 2,
       }
     },
-    dispose() {
+    cleanup() {
       arona.removeEntity(camera)
     },
   }
 }
 
-export const useAronaMapView = buildController(aronaMapView, mapView => {
-  useEffect(() => {
-    return () => {
-      mapView.dispose()
-    }
-  }, [])
-})
+export const useAronaMapView = buildController(AronaMapView)

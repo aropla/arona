@@ -1,5 +1,5 @@
 import { defineEntity } from 'seele'
-import { MiracleID, MiracleRef, Profile, Position, Noa, Selfie, CreatedAt } from '@arona/components'
+import { MiracleID, MiracleRef, Profile, Position, Noa, Selfie, CreatedTime, OwnerRef } from '@arona/components'
 
 export const Miracle = defineEntity(entity => {
   entity
@@ -13,7 +13,8 @@ export const Miracle = defineEntity(entity => {
     .addComponent(Selfie, {
       url: '/default-miracle.jpg',
     })
+    .addComponent(CreatedTime)
+    .addComponent(OwnerRef)
     .addComponent(Position)
     .addComponent(Noa)
-    .addComponent(CreatedAt)
 })

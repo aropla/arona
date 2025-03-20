@@ -1,18 +1,18 @@
 import { defineSystem } from 'seele'
-import { Position, Physical, Vec2, Vec3 } from '@arona/components'
+import { Position, Physical, Velocity } from '@arona/components'
 
-export default defineSystem(seele => {
+export const MoveSystem = defineSystem(seele => {
   const env = {
     friction: 0.8,
-    threshold: 0.01,
+    threshold: 0.02,
   }
 
-  const query = seele.query(q => q.every(Position).some(Vec2, Vec3))
+  const query = seele.query(q => q.every(Position).some(Velocity))
 
   return {
     onUpdate(delta) {
       query.traverse(entity => {
-        const velocity = entity[Vec2] ?? entity[Vec3]
+        const velocity = entity[Velocity]
 
         if (velocity.x === 0 && velocity.y === 0) {
           return
@@ -26,8 +26,9 @@ export default defineSystem(seele => {
 
         const friction = physical.friction ?? env.friction
 
-        velocity.x *= friction
-        velocity.y *= friction
+        const v = friction * delta * 0.01
+        velocity.x -= velocity.x * v
+        velocity.y -= velocity.y * v
 
         const threshold = physical.threshold ?? env.threshold
 

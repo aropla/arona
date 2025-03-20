@@ -6,7 +6,7 @@ import './index.css'
 import { RouterProvider } from 'react-router'
 import { router } from './routes'
 import { SeeleProvider } from '@app/seele-react'
-import arona from '@arona'
+import { arona } from '@arona'
 
 createRoot(document.getElementById('root')).render(
   // <StrictMode>

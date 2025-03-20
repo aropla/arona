@@ -2,8 +2,9 @@ import { useCallback } from 'react'
 import { useEffect } from 'react'
 import { forwardRef } from 'react'
 import { useRef } from 'react'
-import arona from '@arona'
+import { arona } from '@arona'
 import { Renderer } from '@arona/components'
+import { useResize } from '@hooks'
 
 export { useAronaMapView } from './controller'
 
@@ -12,18 +13,11 @@ export default forwardRef(function AronaMapView({ controller, children, mapViewR
   mapViewRef = mapViewRef ?? useRef()
   mapContentRef = mapContentRef ?? useRef()
 
-  const handleResize = useCallback(() => {
-    const rect = mapViewRef.current.getBoundingClientRect()
+  useResize(mapViewRef, useCallback(() => {
+    const rect = mapViewRef.current?.getBoundingClientRect()
+
     mapView.setViewport(rect)
-  }, [])
-
-  useEffect(() => {
-    handleResize()
-
-    window.addEventListener('resize', handleResize)
-
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
+  }, []))
 
   useEffect(() => {
     arona.addComponent(mapView.camera, Renderer, (entity, interp) => {

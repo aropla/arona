@@ -4,23 +4,24 @@ import {
   MiracleNodeRef,
   TravelerRef,
   MemoRef,
+  OwnerRef,
   MiracleID,
   MiracleNodeID,
   TravelerID,
   MemoID,
-  Timer,
+  Mine,
   Profile,
   Temp,
-  Vec2,
-  Vec3,
+  Velocity,
   Position,
   Physical,
   Renderer,
   Noa,
-  CreatedAt,
+  CreatedTime,
   Selfie,
   Status,
-  AuthorRef,
+  Toki,
+  Timer,
 } from '@arona/components'
 
 import {
@@ -32,12 +33,23 @@ import {
   Memo,
 } from '@arona/entities'
 
+import {
+  TravelersQuery,
+  MiraclesQuery,
+  MiracleNodesQuery,
+  MemosQuery,
+  MeQuery,
+} from '@arona/queries'
+
+import {
+  RenderSystem,
+  MoveSystem,
+  TokiSystem,
+} from '@arona/systems'
+
 import * as mocks from '@mocks'
 
-import MoveSystem from '@arona/systems/MoveSystem'
-import RenderSystem from '@arona/systems/RenderSystem'
-
-import SeeleReact from '@app/seele-react'
+import SeeleReact, { useSeeleQuery } from '@app/seele-react'
 import SeeleLocalStore from '@app/seele-local-store'
 
 function Arona() {
@@ -52,19 +64,20 @@ function Arona() {
     .registerComponent(MiracleNodeRef)
     .registerComponent(TravelerRef)
     .registerComponent(MemoRef)
-    .registerComponent(AuthorRef)
-    .registerComponent(Timer)
+    .registerComponent(OwnerRef)
+    .registerComponent(Mine)
     .registerComponent(Profile)
     .registerComponent(Temp)
     .registerComponent(Position)
-    .registerComponent(Vec2)
-    .registerComponent(Vec3)
+    .registerComponent(Velocity)
     .registerComponent(Physical)
     .registerComponent(Renderer)
     .registerComponent(Noa)
-    .registerComponent(CreatedAt)
+    .registerComponent(CreatedTime)
     .registerComponent(Selfie)
     .registerComponent(Status)
+    .registerComponent(Toki)
+    .registerComponent(Timer)
 
     .registerEntity(Miracle)
     .registerEntity(MiracleNode)
@@ -74,6 +87,7 @@ function Arona() {
     .registerEntity(Memo)
 
     .registerSystem(MoveSystem)
+    .registerSystem(TokiSystem)
 
     .registerPlugin(SeeleReact)
     .registerPlugin(SeeleLocalStore)
@@ -87,22 +101,31 @@ function Arona() {
 
   /* Mocks */
   if (!dehydration) {
-    mocks.miracles.forEach(node => {
-      const entity = seele.createEntity(Miracle)
+    mocks.miracles.forEach(miracle => {
+      const entity = seele.createEntity(Miracle, miracle)
 
-      entity[MiracleID] = node[MiracleID]
-      entity[MiracleRef] = node[MiracleRef]
-      entity[Profile] = node[Profile]
+      // entity[MiracleID] = miracle[MiracleID]
+      // entity[MiracleRef] = miracle[MiracleRef]
+      // entity[Profile] = miracle[Profile]
     })
 
-    mocks.miracleNodes.forEach(node => {
-      const entity = seele.createEntity(MiracleNode)
+    mocks.miracleNodes.forEach(miracleNode => {
+      const entity = seele.createEntity(MiracleNode, miracleNode)
 
-      entity[MiracleNodeID] = node[MiracleNodeID]
-      entity[MiracleNodeRef] = node[MiracleNodeRef]
-      entity[MiracleRef] = node[MiracleRef]
-      entity[Profile] = node[Profile]
-      entity[Position] = node[Position]
+      // entity[MiracleNodeID] = miracleNode[MiracleNodeID]
+      // entity[MiracleNodeRef] = miracleNode[MiracleNodeRef]
+      // entity[MiracleRef] = miracleNode[MiracleRef]
+      // entity[Profile] = miracleNode[Profile]
+      // entity[Position] = miracleNode[Position]
+    })
+
+    console.log(mocks.travelers)
+    mocks.travelers.forEach(traveler => {
+      const entity = seele.createEntity(Traveler, traveler)
+
+      seele.addComponent(entity, Mine)
+
+      console.log('[Traveler]', entity)
     })
   }
 
@@ -114,24 +137,54 @@ function Arona() {
 
   const hydration = seele.dehydrate()
   console.log('cur', hydration)
-  // seele.loop.setSimulationTimestep(1000 / 60 / 2)
+  seele.loop.setSimulationTimestep(1000 / 60 / 2)
   seele.start()
 
+  const travelersQuery = seele.query(TravelersQuery)
+  const miraclesQuery = seele.query(MiraclesQuery)
+  const miracleNodesQuery = seele.query(MiracleNodesQuery)
+  const memosQuery = seele.query(MemosQuery)
+  const meQuery = seele.query(MeQuery)
+
   return {
-    seele,
+    ...seele,
+    traveler: {
+      get(travelerID) {
+        return travelersQuery.find(entity => entity[TravelerID] === travelerID)
+      }
+    },
+    miracle: {
+      get(miracleID) {
+        return miraclesQuery.find(entity => entity[MiracleID] === miracleID)
+      },
+    },
+    miracleNode: {
+      get(miracleNodeID) {
+        return miracleNodesQuery.find(entity => entity[MiracleNodeID] === miracleNodeID)
+      }
+    },
+    memo: {
+      get(memoID) {
+        return memosQuery.find(entity => entity[MemoID] === memoID)
+      }
+    },
+    me() {
+      return meQuery.find(() => true)
+    },
   }
 }
 
-const arona = Arona()
+export const arona = Arona()
 
-window.arona = arona.seele
+export function useMe() {
+  const [_, meQuery] = useSeeleQuery(MeQuery)
 
-export default arona.seele
+  return meQuery.get()
+}
 
 
-
-
-
+/* #debug */
+window.arona = arona
 
 
 
